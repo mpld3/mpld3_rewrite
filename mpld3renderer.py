@@ -16,6 +16,21 @@ class MPLD3Renderer(Renderer):
         self.finished_figures = []
 
     def add_data(self, data):
+        """Add a dataset to the current figure
+
+        If the dataset matches any already added data, we use that instead.
+
+        Parameters
+        ----------
+        data : array_like
+            a shape [N,2] array of data
+
+        Returns
+        -------
+        datadict : dictionary
+            datadict has the keys "data", "xindex", "yindex", which will
+            be passed to the mpld3 JSON object.
+        """
         # Check if any column of the data exists elsewhere
         # If so, we'll use that dataset rather than duplicating it.
         data = np.asarray(data)
@@ -30,6 +45,7 @@ class MPLD3Renderer(Renderer):
                 continue
             
             # If we get here, we've found a dataset with a matching column
+            # we'll update this data with additional columns if necessary
             new_data = list(self.datasets[i].T)
             indices = []
             for j in range(data.shape[1]):
@@ -37,6 +53,7 @@ class MPLD3Renderer(Renderer):
                 if len(whr):
                     indices.append(whr[0])
                 else:
+                    # append a new column to the data
                     new_data.append(data[:, j])
                     indices.append(len(new_data) - 1)
 
@@ -45,6 +62,7 @@ class MPLD3Renderer(Renderer):
             xindex, yindex = map(int, indices)
             break
         else:
+            # else here can be thought of as "if no break"
             # if we get here, then there were no matching datasets
             self.datasets.append(data)
             datalabel = "data{0:02d}".format(len(self.figure_json['data']) + 1)
