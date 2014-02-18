@@ -19,7 +19,7 @@ class MPLD3Renderer(Renderer):
         if not self.figure_json:
             raise ValueError("Cannon add data when no figure is open")
         datalabel = "data{0:2d}".format(len(self.figure_json['data']) + 1)
-        self.figure_json['data'][datalabel] = data
+        self.figure_json['data'][datalabel] = np.asarray(data).tolist()
         return datalabel
 
     def open_figure(self, fig, props):
@@ -48,13 +48,13 @@ class MPLD3Renderer(Renderer):
         self.axes_json = None
 
     def draw_line(self, data, coordinates, style):
-        line = dict(data=self.add_data(np.asarray(data).tolist()))
+        line = dict(data=self.add_data(data))
         for key in ['color', 'linewidth', 'dasharray', 'alpha']:
             line[key] = style[key]
         self.axes_json['lines'].append(line)
 
     def draw_markers(self, data, coordinates, style):
-        markers = dict(data=self.add_data(np.asarray(data).tolist()))
+        markers = dict(data=self.add_data(data))
         for key in ['facecolor', 'edgecolor', 'edgewidth', 'alpha']:
             markers[key] = style[key]
         self.axes_json['markers'].append(markers)
