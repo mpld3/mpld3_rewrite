@@ -5,7 +5,11 @@ var mpld3 = {
 };
 
 
-/* Figure object */
+/* Figure object:
+    figspec contains:
+      width  : figure width in points (integer; required)
+      height : figure height in points (integer; required)
+*/
 mpld3.Figure = function(figid, figspec){
     this.figid = figid;
     this.root = d3.select("#" + figid);
@@ -53,14 +57,14 @@ mpld3.Figure.prototype.reset = function(duration){
 };
 
 
-/* Axes Object */
+/* Axes Object: */
 mpld3.Axes = function(fig, axspec){
     this.axnum = fig.axes.length;
     
     this.fig = fig;
-    this.bbox = axspec.bbox;
     this.xlim = axspec.xlim;
     this.ylim = axspec.ylim;
+    this.bbox = ("bbox" in axspec) ? axspec.bbox : [0.1, 0.1, 0.8, 0.8];
     this.axesbg = ("axesbg" in axspec) ? axspec.axesbg : "#F9F9F9";
     this.xdomain = ("xdomain" in axspec) ? axspec.xdomain : this.xlim;
     this.ydomain = ("ydomain" in axspec) ? axspec.ydomain : this.ylim;
@@ -71,6 +75,10 @@ mpld3.Axes = function(fig, axspec){
     this.axclass = ("axclass" in axspec) ? axspec.axclass : "axes";
     this.clipid = ("clipid" in axspec) ? axspec.clipid : "clip";
     this.zoomable = ("zoomable" in axspec) ? axspec.zoomable : true;
+    axes = ("axes" in axspec) ? axspec.axes : [{position:"left"},
+					       {position:"bottom"}];
+    xgridprops = ("xgridprops" in axspec) ? axspec.xgridprops : {};
+    ygridprops = ("ygridprops" in axspec) ? axspec.xgridprops : {};
     
     this.sharex = [];
     this.sharey = [];
@@ -129,14 +137,18 @@ mpld3.Axes = function(fig, axspec){
 	this.y = this.ydom;
     }
 
-    this.elements.push(new mpld3.Axis(this, {"position": "left"}));
-    this.elements.push(new mpld3.Axis(this, {"position": "bottom"}));
+    for(var i=0; i<axes.length; i++){
+	this.elements.push(new mpld3.Axis(this, axes[i]));
+    }
 
+    // TODO: need to allow the 
     if(this.xgridOn){
-	this.elements.push(new mpld3.Grid(this, {xy:"x"}));
+	xgridprops.xy = "x";
+	this.elements.push(new mpld3.Grid(this, xgridprops));
     }
     if(this.ygridOn){
-	this.elements.push(new mpld3.Grid(this, {xy:"y"}));
+	ygridprops.xy = "y";
+	this.elements.push(new mpld3.Grid(this, ygridprops));
     }
 }
 
@@ -265,17 +277,30 @@ mpld3.Axes.prototype.reset = function(){
 };
 
 
-/* Axis object */
+/* Axis object 
+
+Parameters
+----------
+   axspec.position : "left"|"right"|"top"|"bottom"
+       position of the axis
+   axspec.nticks : integer (optional, default = 10)
+       number of major ticks on the axis
+   axspec.tickvalues : list (optional, default = null)
+       if specified, ignore nticks and use these tick values only
+   axspec.tickformat : string (optional, default = null)
+       if specified, use the given string formatter for the tick labels
+   axspec.stroke : string (optional, default = "black")
+       the color of the axis spine and ticks
+*/
 mpld3.Axis = function(axes, axspec){
     this.axes = axes;
     this.position = axspec.position;
     this.nticks = ("nticks" in axspec) ? axspec.nticks : 10;
     this.tickvalues = ("tickvalues" in axspec) ? axspec.tickvalues : null;
     this.tickformat = ("tickformat" in axspec) ? axspec.tickformat : null;
-    this.stroke = ("stroke" in axspec) ? axspec.stroke : "black";
-
-    this.shape_rendering = "crispEdges";
-    this.fill = "none";
+    this.fontsize = ("fontsize" in axspec) ? axspec.fontsize : "11px";
+    this.fontcolor = ("fontcolor" in axspec) ? axspec.fontcolor : "black";
+    this.axiscolor = ("axiscolor" in axspec) ? axspec.axiscolor : "black";
 
     if (this.position == "bottom"){
 	this.transform = "translate(0," + this.axes.height + ")";
@@ -309,15 +334,17 @@ mpld3.Axis.prototype.draw = function(){
         .attr("class", this.class)
         .call(this.axis);
 
-    // We need to write header-level CSS to style these elements, because
+    // We create header-level CSS to style these elements, because
     // zooming/panning creates new elements with these classes.
-    mpld3.insert_css("div#" + this.axes.fig.figid
-		     + " .axis line, .axis path "
-		     + "{shape-rendering:crispEdges; "
-		     + "stroke:black; fill:none;}")
-    mpld3.insert_css("div#" + this.axes.fig.figid + " .axis text " +
-		     "{font-family: sans-serif; font-size: 11px; " +
-		     "fill: black; stroke: none;}")
+    mpld3.insert_css("div#" + this.axes.fig.figid + " .axis line, .axis path",
+		     {"shape-rendering":"crispEdges",
+		      "stroke":this.axiscolor,
+		      "fill":"none"});
+    mpld3.insert_css("div#" + this.axes.fig.figid + " .axis text",
+		     {"font-family": "sans-serif",
+		      "font-size": this.fontsize,
+		      "fill": this.fontcolor,
+		      "stroke": "none"});
 };
 
 mpld3.Axis.prototype.zoomed = function(){
@@ -328,6 +355,10 @@ mpld3.Axis.prototype.zoomed = function(){
 /* Grid Object */
 mpld3.Grid = function(axes, gridspec){
     this.axes = axes;
+    this.color = ("color" in gridspec) ? gridspec.colr : "gray";
+    this.dasharray = ("dasharray" in gridspec) ? gridspec.dasharray : "2,2";
+    this.alpha = ("alpha" in gridspec) ? gridspec.alpha : "0.5";
+    
     if(gridspec.xy == "x"){
 	this.class = "x grid"
 	this.transform = "translate(0," + this.axes.height + ")";
@@ -354,15 +385,14 @@ mpld3.Grid.prototype.draw = function(){
         .attr("transform", this.transform)
         .call(this.grid);
 
-    // We need to write header-level CSS to style these elements, because
+    // We create header-level CSS to style these elements, because
     // zooming/panning creates new elements with these classes.
-    mpld3.insert_css("div#" + this.axes.fig.figid
-		     + " .grid .tick "
-		     + "{stroke: gray;"
-		     + " stroke-dasharray: 2,2;"
-		     + " stroke-opacity: 0.3;}")
-    mpld3.insert_css("div#" + this.axes.fig.figid + " .grid path " +
-		     "{stroke-width: 0;}")
+    mpld3.insert_css("div#" + this.axes.fig.figid + " .grid .tick",
+		     {"stroke": this.color,
+		      "stroke-dasharray": this.dasharray,
+		      "stroke-opacity": this.alpha});
+    mpld3.insert_css("div#" + this.axes.fig.figid + " .grid path", +
+		     {"stroke-width": 0});
 };
 
 mpld3.Grid.prototype.zoomed = function(){
@@ -371,10 +401,10 @@ mpld3.Grid.prototype.zoomed = function(){
 
 
 /* Line Element */
-mpld3.Line = function(data, ax, lineid){
-    this.data = data;
+mpld3.Line = function(ax, linespec){
     this.ax = ax;
-    this.lineid = lineid;
+    this.data = linespec.data;
+    this.id = linespec.id;
 };
 
 mpld3.Line.prototype.translate = function(d){
@@ -438,13 +468,20 @@ mpld3.draw_figure = function(spec, figid){
 };
     
 
-/* Convenience Functions */
+/**********************************************************************/
+/* Convenience Functions                                              */
 
 
 // Function to insert some CSS into the header
-mpld3.insert_css = function(css){
+mpld3.insert_css = function(selector, attributes){
     var head = document.head || document.getElementsByTagName('head')[0];
     var style = document.createElement('style');
+
+    var css = selector + " {"
+    for(var prop in attributes){
+	css += prop + ":" + attributes[prop] + "; "
+    }
+    css += "}"
 
     style.type = 'text/css';
     if (style.styleSheet){
