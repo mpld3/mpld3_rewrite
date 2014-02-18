@@ -22,39 +22,35 @@ class MPLD3Renderer(Renderer):
         if data.ndim != 2 and data.shape[1] != 2:
             raise ValueError("Data is expected to be of size [N, 2]")
 
-        # here we check whether any previously-added dataset
-        # is a potential match
-        matching_data = -1
-        for i, d in enumerate(self.datasets):
+        for (i, d) in enumerate(self.datasets):
             if data.shape[0] != d.shape[0]:
                 continue
-
-            matches = np.array([np.all(col == d.T, axis=1)
-                                for col in data.T])
-            if np.any(matches):
-                matching_data = i
-                break
-
-        if matching_data >= 0:
-            new_data = list(self.datasets[matching_data].T)
+            matches = np.array([np.all(col == d.T, axis=1) for col in data.T])
+            if not np.any(matches):
+                continue
+            
+            # If we get here, we've found a dataset with a matching column
+            new_data = list(self.datasets[i].T)
             indices = []
-            for i in range(data.shape[1]):
-                match = np.where(matches[i])[0]
-                if len(match):
-                    indices.append(match[0])
+            for j in range(data.shape[1]):
+                whr = np.where(matches[j])[0]
+                if len(whr):
+                    indices.append(whr[0])
                 else:
-                    new_data.append(data[:, i])
+                    new_data.append(data[:, j])
                     indices.append(len(new_data) - 1)
 
-            self.datasets[matching_data] = np.asarray(new_data).T
-            datalabel = self.datalabels[matching_data]
+            self.datasets[i] = np.asarray(new_data).T
+            datalabel = self.datalabels[i]
             xindex, yindex = map(int, indices)
+            break
         else:
+            # if we get here, then there were no matching datasets
             self.datasets.append(data)
             datalabel = "data{0:02d}".format(len(self.figure_json['data']) + 1)
             xindex = 0
             yindex = 1
-
+            
         self.datalabels.append(datalabel)
         return {"data":datalabel, "xindex":xindex, "yindex":yindex}
 
