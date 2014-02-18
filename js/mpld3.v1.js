@@ -452,8 +452,8 @@ mpld3.Line = function(ax, prop){
     this.ax = ax;
 
     var required = ["data"]
-    var defaults = {x_index: 0,
-		    y_index: 1,
+    var defaults = {xindex: 0,
+		    yindex: 1,
 		    color: "salmon",
 		    linewidth: 2,
 		    dasharray: "10,0",
@@ -467,8 +467,8 @@ mpld3.Line = function(ax, prop){
 mpld3.Line.prototype.draw = function(){
     // TODO: style stuff here
     this.line = d3.svg.line()
-        .x(function(d) {return this.ax.x(d[this.prop.x_index]);})
-        .y(function(d) {return this.ax.y(d[this.prop.y_index]);})
+        .x(function(d) {return this.ax.x(d[this.prop.xindex]);})
+        .y(function(d) {return this.ax.y(d[this.prop.yindex]);})
         .interpolate("linear")
         .defined(function (d) {return !isNaN(d[0]) && !isNaN(d[1]); });
 
@@ -495,8 +495,8 @@ mpld3.Markers = function(ax, prop){
     this.id = Math.floor(Math.random() * 1E12);
     
     var required = ["data"];
-    var defaults = {x_index: 0,
-		    y_index: 1,
+    var defaults = {xindex: 0,
+		    yindex: 1,
 		    facecolor: "salmon",
 		    edgecolor: "black",
 		    edgewidth: 1,
@@ -516,9 +516,9 @@ mpld3.Markers = function(ax, prop){
 };
 
 mpld3.Markers.prototype.translate = function(d){
-    { return "translate("
-      + this.ax.x(d[this.prop.x_index]) + ","
-      + this.ax.y(d[this.prop.y_index]) + ")"; };
+    return "translate("
+      + this.ax.x(d[this.prop.xindex]) + ","
+      + this.ax.y(d[this.prop.yindex]) + ")";
 };
 
 mpld3.Markers.prototype.draw = function(){
@@ -529,12 +529,12 @@ mpld3.Markers.prototype.draw = function(){
         .enter().append("svg:path")
           .attr('class', 'points' + this.id)
           .attr("d", this.marker)
-        .attr("transform", this.translate.bind(this))
-        .style("stroke-width", this.prop.edgewidth)
-        .style("stroke", this.prop.edgecolor)
-        .style("fill", this.prop.facecolor)
-        .style("fill-opacity", this.prop.alpha)
-        .style("stroke-opacity", this.prop.alpha);
+          .attr("transform", this.translate.bind(this))
+          .style("stroke-width", this.prop.edgewidth)
+          .style("stroke", this.prop.edgecolor)
+          .style("fill", this.prop.facecolor)
+          .style("fill-opacity", this.prop.alpha)
+          .style("stroke-opacity", this.prop.alpha);
 }
 
 mpld3.Markers.prototype.zoomed = function(){

@@ -11,8 +11,8 @@
                      ylim: [0, 7],
                      xgridOn: true,
                      ygridOn: true,
-                     lines: [{data:"line1"}],
-                     markers: [{data:"line1"}],
+                     lines: [{data:"line1", color:"salmon"}],
+                     markers: [{data:"line1", facecolor:"salmon"}],
                      texts: [{position: [3,3],
                               text: "blue moving",
                               fontsize: 14,
@@ -22,7 +22,7 @@
                               text: "red stationary",
                               fontsize: 14,
                               color: "red"}],
-                    }, 
+                    },
                     ]
              };
   var fig = mpld3.draw_figure("fig01", spec);
