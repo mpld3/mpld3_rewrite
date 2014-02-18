@@ -11,17 +11,19 @@ var mpld3 = {
       height : figure height in points (integer; required)
 */
 mpld3.Figure = function(figid, prop){
-    prop = mpld3.process_props(this, prop,
-			       {data:{}, axes:[]},
-			       ["width", "height"])
+    this.name = "mpld3.Figure";
+    this.figid = figid;
+    this.root = d3.select('#' + figid);
+
+    var required = ["width", "height"];
+    var defaults = {data:{}, axes:[]};
+    prop = mpld3.process_props(this, prop, defaults, required);
+
     this.width = prop.width;
     this.height = prop.height;
     this.data = prop.data;
 
-    this.figid = figid;
-    this.root = d3.select('#' + figid);
     this.axes = [];
-
     for(var i=0; i<prop.axes.length; i++){
 	this.axes.push(new mpld3.Axes(this, prop.axes[i]));
     }
@@ -63,69 +65,75 @@ mpld3.Figure.prototype.reset = function(duration){
 
 
 /* Axes Object: */
-mpld3.Axes = function(fig, axspec){
+mpld3.Axes = function(fig, prop){
+    this.name = "mpld3.Axes";
+    this.fig = fig;
     this.axnum = fig.axes.length;
     this.axid = fig.figid + '_ax' + (this.axnum + 1)
+    this.clipid = this.axid + '_clip'
+
+    var required = ["xlim", "ylim"];
+    var defaults = {"bbox": [0.1, 0.1, 0.8, 0.8],
+		    "axesbg": "#FFFFFF",
+		    "axesbgalpha": 1.0,
+		    "xdomain": null,
+		    "ydomain": null,
+		    "xscale": "linear",
+		    "yscale": "linear",
+		    "xgridOn": false,
+		    "ygridOn": false,
+		    "zoomable": true,
+		    "axes": [{position:"left"},
+			     {position:"bottom"}],
+		    "xgridprops": {},
+		    "ygridprops": {},
+		    "lines": [],
+		    "markers": [],
+		    "texts": []};
+    this.prop = mpld3.process_props(this, prop, defaults, required)
+    this.prop.xdomain = this.prop.xdomain || this.prop.xlim;
+    this.prop.ydomain = this.prop.ydomain || this.prop.ylim;
     
     this.fig = fig;
-    this.xlim = axspec.xlim;
-    this.ylim = axspec.ylim;
-    this.bbox = mpld3.get_default(axspec, "bbox", [0.1, 0.1, 0.8, 0.8]);
-    this.axesbg = mpld3.get_default(axspec, "axesbg", "#FFFFFF");
-    this.xdomain = mpld3.get_default(axspec, "xdomain", this.xlim);
-    this.ydomain = mpld3.get_default(axspec, "ydomain", this.ylim);
-    this.xscale = mpld3.get_default(axspec, "xscale", "linear");
-    this.yscale = mpld3.get_default(axspec, "yscale", "linear");
-    this.xgridOn = mpld3.get_default(axspec, "xgridOn", false);
-    this.ygridOn = mpld3.get_default(axspec, "ygridOn", false);
-    this.axclass = mpld3.get_default(axspec, "axclass", "axes");
-    this.clipid = mpld3.get_default(axspec, "clipid", this.axid + "clip");
-    this.zoomable = mpld3.get_default(axspec, "zoomable", true);
-    axes = mpld3.get_default(axspec, "axes", [{position:"left"},
-					      {position:"bottom"}]);
-    xgridprops = mpld3.get_default(axspec, "xgridprops", {});
-    ygridprops = mpld3.get_default(axspec, "ygridprops", {});
-    lines = mpld3.get_default(axspec, "lines", []);
-    markers = mpld3.get_default(axspec, "markers", []);
-    texts = mpld3.get_default(axspec, "texts", []);
 
     this.sharex = [];
     this.sharey = [];
     this.elements = [];
     
-    this.position = [this.bbox[0] * this.fig.width,
-                     (1 - this.bbox[1] - this.bbox[3]) * this.fig.height];
-    this.width = this.bbox[2] * this.fig.width;
-    this.height = this.bbox[3] * this.fig.height;
+    var bbox = this.prop.bbox;
+    this.position = [bbox[0] * this.fig.width,
+                     (1 - bbox[1] - bbox[3]) * this.fig.height];
+    this.width = bbox[2] * this.fig.width;
+    this.height = bbox[3] * this.fig.height;
     
-    if(this.xscale === 'log'){
+    if(this.prop.xscale === 'log'){
 	this.xdom = d3.scale.log();
-    }else if(this.xscale === 'date'){
+    }else if(this.prop.xscale === 'date'){
 	this.xdom = d3.time.scale();
     }else{
 	this.xdom = d3.scale.linear();
     }
     
-    if(this.yscale === 'log'){
+    if(this.prop.yscale === 'log'){
 	this.ydom = d3.scale.log();
-    }else if(this.yscale === 'date'){
+    }else if(this.prop.yscale === 'date'){
 	this.ydom = d3.time.scale();
     }else{
 	this.ydom = d3.scale.linear();
     }
     
-    this.xdom.domain(this.xdomain)
+    this.xdom.domain(this.prop.xdomain)
         .range([0, this.width]);
     
-    this.ydom.domain(this.ydomain)
+    this.ydom.domain(this.prop.ydomain)
         .range([this.height, 0]);
     
-    if(this.xscale === 'date'){
+    if(this.prop.xscale === 'date'){
 	this.xmap = d3.time.scale()
-            .domain(this.xdomain)
-            .range(this.xlim);
+            .domain(this.prop.xdomain)
+            .range(this.prop.xlim);
 	this.x = function(x){return this.xdom(this.xmap.invert(x));}
-    }else if(this.xscale === 'log'){
+    }else if(this.prop.xscale === 'log'){
 	this.xmap = this.xdom;
 	this.x = this.xdom;
     }else{
@@ -133,18 +141,23 @@ mpld3.Axes = function(fig, axspec){
 	this.x = this.xdom;
     }
     
-    if(this.yscale === 'date'){
+    if(this.prop.yscale === 'date'){
 	this.ymap = d3.time.scale()
             .domain(this.ydomain)
-            .range(this.ylim);
+            .range(this.prop.ylim);
 	this.y = function(y){return this.ydom(this.ymap.invert(y));}
-    }else if(this.xscale === 'log'){
+    }else if(this.prop.yscale === 'log'){
 	this.ymap = this.ydom;
 	this.y = this.ydom;
     }else{
 	this.ymap = this.ydom;
 	this.y = this.ydom;
     }
+
+    var axes = this.prop.axes;
+    var lines = this.prop.lines;
+    var markers = this.prop.markers;
+    var texts = this.prop.texts;
 
     // Add axes
     for(var i=0; i<axes.length; i++){
@@ -152,13 +165,13 @@ mpld3.Axes = function(fig, axspec){
     }
 
     // Add grids
-    if(this.xgridOn){
-	xgridprops.xy = "x";
-	this.elements.push(new mpld3.Grid(this, xgridprops));
+    if(this.prop.xgridOn){
+	this.prop.xgridprops.xy = "x";
+	this.elements.push(new mpld3.Grid(this, this.prop.xgridprops));
     }
-    if(this.ygridOn){
-	ygridprops.xy = "y";
-	this.elements.push(new mpld3.Grid(this, ygridprops));
+    if(this.prop.ygridOn){
+	this.prop.ygridprops.xy = "y";
+	this.elements.push(new mpld3.Grid(this, this.prop.ygridprops));
     }
 
     // Add lines
@@ -191,7 +204,7 @@ mpld3.Axes.prototype.draw = function(){
         .attr('height', this.height)
         .attr('class', "baseaxes");
     
-    if(this.zoomable){
+    if(this.prop.zoomable){
 	this.baseaxes.call(this.zoom);
     }
     
@@ -199,7 +212,8 @@ mpld3.Axes.prototype.draw = function(){
         .attr("width", this.width)
         .attr("height", this.height)
         .attr("class", "axesbg")
-	.attr("style", "fill:" + this.axesbg + ";");
+	.style("fill", this.prop.axesbg)
+        .style("fill-opacity", this.prop.axesbgalpha);
     
     this.clip = this.baseaxes.append("svg:clipPath")
         .attr("id", this.clipid)
@@ -210,7 +224,7 @@ mpld3.Axes.prototype.draw = function(){
         .attr("height", this.height)
     
     this.axes = this.baseaxes.append("g")
-        .attr("class", this.axclass)
+        .attr("class", "axes")
         .attr("clip-path", "url(#" + this.clipid + ")");
     
     for(var i=0; i<this.elements.length; i++){
@@ -252,7 +266,7 @@ mpld3.Axes.prototype.prep_reset = function(){
     // we use the same strategy for log, so the interpolation will be smooth.
     // There probably is a cleaner approach...
     
-    if (this.xscale === 'date'){
+    if (this.prop.xscale === 'date'){
 	var start = this.xdom.domain();
 	var end = this.xdomain;
 	var interp = d3.interpolate(
@@ -263,10 +277,10 @@ mpld3.Axes.prototype.prep_reset = function(){
 		    this.xmap.invert(interp(t)[1])];
 	}
     }else{
-	this.ix = d3.interpolate(this.xdom.domain(), this.xlim);
+	this.ix = d3.interpolate(this.xdom.domain(), this.prop.xlim);
     }
     
-    if (this.yscale === 'date'){
+    if (this.prop.yscale === 'date'){
 	var start = this.ydom.domain();
 	var end = this.ydomain;
 	var interp = d3.interpolate(
@@ -277,7 +291,7 @@ mpld3.Axes.prototype.prep_reset = function(){
 		    this.ymap.invert(interp(t)[1])];
 	}
     }else{
-	this.iy = d3.interpolate(this.ydom.domain(), this.ylim);
+	this.iy = d3.interpolate(this.ydom.domain(), this.prop.ylim);
     }
 }
 
@@ -514,7 +528,6 @@ mpld3.Markers.prototype.zoomed = function(){
 /* Text Element */
 mpld3.Text = function(ax, prop){
     this.ax = ax;
-    console.log(prop);
     this.prop = mpld3.process_props(this, prop,
 				    {coordinates: "data",
 				     h_anchor: "start",
@@ -524,10 +537,8 @@ mpld3.Text = function(ax, prop){
 				     color: "black",
 				     alpha: 1.0},
 				    ["text", "position"]);
-    console.log(this.prop);
     this.text = this.prop.text;
     this.position = this.prop.position;
-    console.log(this.position);
 }
 
 mpld3.Text.prototype.draw = function(){
@@ -559,7 +570,6 @@ mpld3.Text.prototype.draw = function(){
 }
 
 mpld3.Text.prototype.zoomed = function(){
-    console.log(this.prop.coordinates);
     if(this.prop.coordinates == "data"){
 	pos_x = this.ax.x(this.position[0]);
 	pos_y = this.ax.y(this.position[1]);
@@ -580,7 +590,7 @@ mpld3.Text.prototype.zoomed = function(){
 mpld3.draw_figure = function(figid, spec){
     var element = document.getElementById(figid);
     if(element === null){
-	console.log(figid + " is not a valid id");
+	throw (figid + " is not a valid id");
 	return null;
     }
     var fig = new mpld3.Figure(figid, spec);
@@ -598,7 +608,8 @@ mpld3.process_props = function(obj, properties, defaults, required){
 
     for(i=0; i<required.length; i++){
 	if(!(required[i] in properties)){
-	    throw "property '" + required[i] + "' must be specified for " + obj;
+	    throw ("property '" + required[i] + "' " +
+		   "must be specified for " + obj.name);
 	}
     }
     for(var property in defaults){
