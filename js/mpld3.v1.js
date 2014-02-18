@@ -15,6 +15,7 @@ mpld3.Figure = function(figid, figspec){
     this.root = d3.select("#" + figid);
     this.width = figspec.width;
     this.height = figspec.height;
+    this.data = mpld3.get_default(figspec, "data", {});
 
     this.axes = [];
     for(var i=0; i<figspec.axes.length; i++){
@@ -60,26 +61,29 @@ mpld3.Figure.prototype.reset = function(duration){
 /* Axes Object: */
 mpld3.Axes = function(fig, axspec){
     this.axnum = fig.axes.length;
+    this.axid = fig.figid + '_ax' + (this.axnum + 1)
     
     this.fig = fig;
     this.xlim = axspec.xlim;
     this.ylim = axspec.ylim;
-    this.bbox = ("bbox" in axspec) ? axspec.bbox : [0.1, 0.1, 0.8, 0.8];
-    this.axesbg = ("axesbg" in axspec) ? axspec.axesbg : "#F9F9F9";
-    this.xdomain = ("xdomain" in axspec) ? axspec.xdomain : this.xlim;
-    this.ydomain = ("ydomain" in axspec) ? axspec.ydomain : this.ylim;
-    this.xscale = ("xscale" in axspec) ? axspec.xscale : "linear";
-    this.yscale = ("yscale" in axspec) ? axspec.yscale : "linear";
-    this.xgridOn = ("xgridOn" in axspec) ? axspec.xgridOn : false;
-    this.ygridOn = ("ygridOn" in axspec) ? axspec.ygridOn : false;
-    this.axclass = ("axclass" in axspec) ? axspec.axclass : "axes";
-    this.clipid = ("clipid" in axspec) ? axspec.clipid : "clip";
-    this.zoomable = ("zoomable" in axspec) ? axspec.zoomable : true;
-    axes = ("axes" in axspec) ? axspec.axes : [{position:"left"},
-					       {position:"bottom"}];
-    xgridprops = ("xgridprops" in axspec) ? axspec.xgridprops : {};
-    ygridprops = ("ygridprops" in axspec) ? axspec.xgridprops : {};
-    
+    this.bbox = mpld3.get_default(axspec, "bbox", [0.1, 0.1, 0.8, 0.8]);
+    this.axesbg = mpld3.get_default(axspec, "axesbg", "#FFFFFF");
+    this.xdomain = mpld3.get_default(axspec, "xdomain", this.xlim);
+    this.ydomain = mpld3.get_default(axspec, "ydomain", this.ylim);
+    this.xscale = mpld3.get_default(axspec, "xscale", "linear");
+    this.yscale = mpld3.get_default(axspec, "yscale", "linear");
+    this.xgridOn = mpld3.get_default(axspec, "xgridOn", false);
+    this.ygridOn = mpld3.get_default(axspec, "ygridOn", false);
+    this.axclass = mpld3.get_default(axspec, "axclass", "axes");
+    this.clipid = mpld3.get_default(axspec, "clipid", this.axid + "clip");
+    this.zoomable = mpld3.get_default(axspec, "zoomable", true);
+    axes = mpld3.get_default(axspec, "axes", [{position:"left"},
+					      {position:"bottom"}]);
+    xgridprops = mpld3.get_default(axspec, "xgridprops", {});
+    ygridprops = mpld3.get_default(axspec, "ygridprops", {});
+    lines = mpld3.get_default(axspec, "lines", []);
+    markers = mpld3.get_default(axspec, "markers", []);
+
     this.sharex = [];
     this.sharey = [];
     this.elements = [];
@@ -137,11 +141,12 @@ mpld3.Axes = function(fig, axspec){
 	this.y = this.ydom;
     }
 
+    // Add axes
     for(var i=0; i<axes.length; i++){
 	this.elements.push(new mpld3.Axis(this, axes[i]));
     }
 
-    // TODO: need to allow the 
+    // Add grids
     if(this.xgridOn){
 	xgridprops.xy = "x";
 	this.elements.push(new mpld3.Grid(this, xgridprops));
@@ -149,6 +154,16 @@ mpld3.Axes = function(fig, axspec){
     if(this.ygridOn){
 	ygridprops.xy = "y";
 	this.elements.push(new mpld3.Grid(this, ygridprops));
+    }
+
+    // Add lines
+    for(var i=0; i<lines.length;i++){
+	this.elements.push(new mpld3.Line(this, lines[i]));
+    }
+
+    // Add markers
+    for(var i=0; i<markers.length;i++){
+	this.elements.push(new mpld3.Markers(this, markers[i]));
     }
 }
 
@@ -219,10 +234,6 @@ mpld3.Axes.prototype.zoomed = function(propagate){
 	    this.sharey[i].zoomed(false);
 	}
     }
-};
-
-mpld3.Axes.prototype.add_element = function(element){
-    this.elements.push(element);
 };
 
 mpld3.Axes.prototype.prep_reset = function(){
@@ -355,22 +366,23 @@ mpld3.Axis.prototype.zoomed = function(){
 /* Grid Object */
 mpld3.Grid = function(axes, gridspec){
     this.axes = axes;
-    this.color = ("color" in gridspec) ? gridspec.colr : "gray";
+    this.color = ("color" in gridspec) ? gridspec.color : "gray";
     this.dasharray = ("dasharray" in gridspec) ? gridspec.dasharray : "2,2";
     this.alpha = ("alpha" in gridspec) ? gridspec.alpha : "0.5";
+    this.class = gridspec.xy + "grid";
     
     if(gridspec.xy == "x"){
-	this.class = "x grid"
 	this.transform = "translate(0," + this.axes.height + ")";
 	this.position = "bottom";
 	this.scale = this.axes.xdom;
 	this.tickSize = -this.axes.height;
-    }else{
-	this.class = "y grid"
+    }else if(gridspec.xy == "y"){
 	this.transform = "translate(0,0)";
 	this.position = "left";
 	this.scale = this.axes.ydom;
 	this.tickSize = -this.axes.width;
+    }else{
+	throw "unrecognized grid specifier: should be 'x' or 'y'";
     }
 }
 
@@ -387,11 +399,13 @@ mpld3.Grid.prototype.draw = function(){
 
     // We create header-level CSS to style these elements, because
     // zooming/panning creates new elements with these classes.
-    mpld3.insert_css("div#" + this.axes.fig.figid + " .grid .tick",
+    mpld3.insert_css("div#" + this.axes.fig.figid +
+		     " ." + this.class + " .tick",
 		     {"stroke": this.color,
 		      "stroke-dasharray": this.dasharray,
 		      "stroke-opacity": this.alpha});
-    mpld3.insert_css("div#" + this.axes.fig.figid + " .grid path", +
+    mpld3.insert_css("div#" + this.axes.fig.figid +
+		     " ." + this.class + " path", +
 		     {"stroke-width": 0});
 };
 
@@ -402,27 +416,33 @@ mpld3.Grid.prototype.zoomed = function(){
 
 /* Line Element */
 mpld3.Line = function(ax, linespec){
-    this.ax = ax;
-    this.data = linespec.data;
-    this.id = linespec.id;
-};
-
-mpld3.Line.prototype.translate = function(d){
-    { return "translate("
-      + this.ax.x(d[0]) + ","
-      + this.ax.y(d[1]) + ")"; };
+    this.ax = ax
+    this.data = ax.fig.data[linespec.data];
+    this.x_index = mpld3.get_default(linespec, "x_index", 0);
+    this.y_index = mpld3.get_default(linespec, "y_index", 1);
+    this.color = mpld3.get_default(linespec, "color", "salmon");
+    this.linewidth = mpld3.get_default(linespec, "linewidth", 2);
+    this.dasharray = mpld3.get_default(linespec, "dasharray", "10,0");
+    this.fill = mpld3.get_default(linespec, "fill", "none");
+    this.alpha = mpld3.get_default(linespec, "alpha", 1.0);
 };
 
 mpld3.Line.prototype.draw = function(){
+    // TODO: style stuff here
     this.line = d3.svg.line()
-        .x(function(d) {return this.ax.x(d[0]);})
-        .y(function(d) {return this.ax.y(d[1]);})
+        .x(function(d) {return this.ax.x(d[this.x_index]);})
+        .y(function(d) {return this.ax.y(d[this.y_index]);})
         .interpolate("linear")
         .defined(function (d) {return !isNaN(d[0]) && !isNaN(d[1]); });
 
     this.lineobj = this.ax.axes.append("svg:path")
         .attr("d", this.line(this.data))
-        .attr('class', this.lineid);
+        .attr('class', this.lineid)
+	.style("stroke", this.color)
+	.style("stroke-width", this.linewidth)
+	.style("stroke-dasharray", this.dasharray)
+	.style("fill", this.fill)
+	.style("stroke-opacity", this.alpha);
 }
 
 mpld3.Line.prototype.zoomed = function(){
@@ -432,11 +452,27 @@ mpld3.Line.prototype.zoomed = function(){
 
 
 /* Markers Element */
-mpld3.Markers = function(data, ax, id, markerpath){
-    this.data = data;
+mpld3.Markers = function(ax, markerspec){
     this.ax = ax;
-    this.id = id;
-    this.markerpath = markerpath;
+    this.data = ax.fig.data[markerspec.data];
+    this.x_index = mpld3.get_default(markerspec, "x_index", 0);
+    this.y_index = mpld3.get_default(markerspec, "y_index", 1);
+    this.facecolor = mpld3.get_default(markerspec, "facecolor", "salmon");
+    this.edgecolor = mpld3.get_default(markerspec, "edgecolor", "black");
+    this.edgewidth = mpld3.get_default(markerspec, "edgewidth", 1);
+    this.alpha = mpld3.get_default(markerspec, "alpha", 1.0);
+
+    this.markername = mpld3.get_default(markerspec, "markername", "circle");
+    this.markerpath = mpld3.get_default(markerspec, "markerpath", null);
+
+    this.marker = d3.svg.symbol(this.markername);
+    //this.marker = construct_SVG_path(this.markerpath);
+};
+
+mpld3.Markers.prototype.translate = function(d){
+    { return "translate("
+      + this.ax.x(d[this.x_index]) + ","
+      + this.ax.y(d[this.y_index]) + ")"; };
 };
 
 mpld3.Markers.prototype.draw = function(){
@@ -445,9 +481,14 @@ mpld3.Markers.prototype.draw = function(){
         .data(this.data.filter(
             function(d){return !isNaN(d[0]) && !isNaN(d[1]); }))
         .enter().append("svg:path")
-        .attr('class', 'points' + this.id)
-        .attr("d", construct_SVG_path(this.markerpath))
-        .attr("transform", this.translate.bind(this));
+          .attr('class', 'points' + this.id)
+          .attr("d", this.marker)
+        .attr("transform", this.translate.bind(this))
+        .style("stroke-width", this.edgewidth)
+        .style("stroke", this.edgecolor)
+        .style("fill", this.facecolor)
+        .style("fill-opacity", this.alpha)
+        .style("stroke-opacity", this.alpha);
 }
 
 mpld3.Markers.prototype.zoomed = function(){
@@ -455,22 +496,29 @@ mpld3.Markers.prototype.zoomed = function(){
     this.pointsobj.attr("transform", this.translate.bind(this));
 }
 
+
+/**********************************************************************/
 /* Data Parsing Functions */
-mpld3.draw_figure = function(spec, figid){
+mpld3.draw_figure = function(figid, spec){
     var element = document.getElementById(figid);
     if(element === null){
-	console.log(div_id + " is not a valid id");
+	console.log(figid + " is not a valid id");
 	return null;
     }
     var fig = new mpld3.Figure(figid, spec);
     fig.draw();
     return fig;
 };
-    
+
 
 /**********************************************************************/
 /* Convenience Functions                                              */
 
+
+// Function to get an attribute, or substitute a default if it doesn't exist
+mpld3.get_default = function(object, attr, default_val){
+    return (attr in object) ? object[attr] : default_val;
+};
 
 // Function to insert some CSS into the header
 mpld3.insert_css = function(selector, attributes){
