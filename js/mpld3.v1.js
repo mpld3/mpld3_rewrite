@@ -316,69 +316,73 @@ mpld3.Axes.prototype.reset = function(){
 
 Parameters
 ----------
-   axspec.position : "left"|"right"|"top"|"bottom"
+   prop.position : "left"|"right"|"top"|"bottom"
        position of the axis
-   axspec.nticks : integer (optional, default = 10)
+   prop.nticks : integer (optional, default = 10)
        number of major ticks on the axis
-   axspec.tickvalues : list (optional, default = null)
+   prop.tickvalues : list (optional, default = null)
        if specified, ignore nticks and use these tick values only
-   axspec.tickformat : string (optional, default = null)
+   prop.tickformat : string (optional, default = null)
        if specified, use the given string formatter for the tick labels
-   axspec.stroke : string (optional, default = "black")
+   prop.stroke : string (optional, default = "black")
        the color of the axis spine and ticks
 */
-mpld3.Axis = function(axes, axspec){
+mpld3.Axis = function(axes, prop){
+    this.name = mpld3.Axis;
     this.axes = axes;
-    this.position = axspec.position;
-    this.nticks = ("nticks" in axspec) ? axspec.nticks : 10;
-    this.tickvalues = ("tickvalues" in axspec) ? axspec.tickvalues : null;
-    this.tickformat = ("tickformat" in axspec) ? axspec.tickformat : null;
-    this.fontsize = ("fontsize" in axspec) ? axspec.fontsize : "11px";
-    this.fontcolor = ("fontcolor" in axspec) ? axspec.fontcolor : "black";
-    this.axiscolor = ("axiscolor" in axspec) ? axspec.axiscolor : "black";
 
-    if (this.position == "bottom"){
+    var required = ["position"]
+    var defaults = {nticks : 10,
+		    tickvalues : null,
+		    tickformat : null,
+		    fontsize : "11px",
+		    fontcolor : "black",
+		    axiscolor : "black"}
+    this.prop = mpld3.process_props(this, prop, defaults, required);
+    
+    var position = this.prop.position;
+    if (position == "bottom"){
 	this.transform = "translate(0," + this.axes.height + ")";
 	this.scale = this.axes.xdom;
-	this.class = "x axis";
-    }else if (this.position == "top"){
+	this.cssclass = "x axis";
+    }else if (position == "top"){
 	this.transform = "translate(0,0)"
 	this.scale = this.axes.xdom;
-	this.class = "x axis";
-    }else if (this.position == "left"){
+	this.cssclass = "x axis";
+    }else if (position == "left"){
 	this.transform = "translate(0,0)";
 	this.scale = this.axes.ydom;
-	this.class = "y axis";
+	this.cssclass = "y axis";
     }else{
 	this.transform = "translate(" + this.axes.width + ",0)";
 	this.scale = this.axes.ydom;
-	this.class = "y axis";
+	this.cssclass = "y axis";
     }
 }
 
 mpld3.Axis.prototype.draw = function(){
     this.axis = d3.svg.axis()
         .scale(this.scale)
-        .orient(this.position)
-        .ticks(this.nticks)
-        .tickValues(this.tickvalues)
-        .tickFormat(this.tickformat);
+        .orient(this.prop.position)
+        .ticks(this.prop.nticks)
+        .tickValues(this.prop.tickvalues)
+        .tickFormat(this.prop.tickformat);
 
     this.elem = this.axes.baseaxes.append('g')
         .attr("transform", this.transform)
-        .attr("class", this.class)
+        .attr("class", this.cssclass)
         .call(this.axis);
 
     // We create header-level CSS to style these elements, because
     // zooming/panning creates new elements with these classes.
     mpld3.insert_css("div#" + this.axes.fig.figid + " .axis line, .axis path",
 		     {"shape-rendering":"crispEdges",
-		      "stroke":this.axiscolor,
+		      "stroke":this.prop.axiscolor,
 		      "fill":"none"});
     mpld3.insert_css("div#" + this.axes.fig.figid + " .axis text",
 		     {"font-family": "sans-serif",
-		      "font-size": this.fontsize,
-		      "fill": this.fontcolor,
+		      "font-size": this.prop.fontsize,
+		      "fill": this.prop.fontcolor,
 		      "stroke": "none"});
 };
 
@@ -388,25 +392,29 @@ mpld3.Axis.prototype.zoomed = function(){
 
 
 /* Grid Object */
-mpld3.Grid = function(axes, gridspec){
+mpld3.Grid = function(axes, prop){
+    this.name = "mpld3.Grid";
     this.axes = axes;
-    this.color = ("color" in gridspec) ? gridspec.color : "gray";
-    this.dasharray = ("dasharray" in gridspec) ? gridspec.dasharray : "2,2";
-    this.alpha = ("alpha" in gridspec) ? gridspec.alpha : "0.5";
-    this.class = gridspec.xy + "grid";
+
+    var required = ["xy"];
+    var defaults = {color : "gray",
+		    dasharray : "2,2",
+		    alpha : "0.5"};
+    this.prop = mpld3.process_props(this, prop, defaults, required);
+    this.cssclass = this.prop.xy + "grid";
     
-    if(gridspec.xy == "x"){
+    if(this.prop.xy == "x"){
 	this.transform = "translate(0," + this.axes.height + ")";
 	this.position = "bottom";
 	this.scale = this.axes.xdom;
 	this.tickSize = -this.axes.height;
-    }else if(gridspec.xy == "y"){
+    }else if(this.prop.xy == "y"){
 	this.transform = "translate(0,0)";
 	this.position = "left";
 	this.scale = this.axes.ydom;
 	this.tickSize = -this.axes.width;
     }else{
-	throw "unrecognized grid specifier: should be 'x' or 'y'";
+	throw "unrecognized grid xy specifier: should be 'x' or 'y'";
     }
 }
 
@@ -417,19 +425,19 @@ mpld3.Grid.prototype.draw = function(){
         .tickSize(this.tickSize, 0, 0)
         .tickFormat("");
     this.elem = this.axes.axes.append("g")
-        .attr("class", this.class)
+        .attr("class", this.cssclass)
         .attr("transform", this.transform)
         .call(this.grid);
 
     // We create header-level CSS to style these elements, because
     // zooming/panning creates new elements with these classes.
     mpld3.insert_css("div#" + this.axes.fig.figid +
-		     " ." + this.class + " .tick",
-		     {"stroke": this.color,
-		      "stroke-dasharray": this.dasharray,
-		      "stroke-opacity": this.alpha});
+		     " ." + this.cssclass + " .tick",
+		     {"stroke": this.prop.color,
+		      "stroke-dasharray": this.prop.dasharray,
+		      "stroke-opacity": this.prop.alpha});
     mpld3.insert_css("div#" + this.axes.fig.figid +
-		     " ." + this.class + " path", +
+		     " ." + this.cssclass + " path", +
 		     {"stroke-width": 0});
 };
 
@@ -439,34 +447,39 @@ mpld3.Grid.prototype.zoomed = function(){
 
 
 /* Line Element */
-mpld3.Line = function(ax, linespec){
-    this.ax = ax
-    this.data = ax.fig.data[linespec.data];
-    this.x_index = mpld3.get_default(linespec, "x_index", 0);
-    this.y_index = mpld3.get_default(linespec, "y_index", 1);
-    this.color = mpld3.get_default(linespec, "color", "salmon");
-    this.linewidth = mpld3.get_default(linespec, "linewidth", 2);
-    this.dasharray = mpld3.get_default(linespec, "dasharray", "10,0");
-    this.fill = mpld3.get_default(linespec, "fill", "none");
-    this.alpha = mpld3.get_default(linespec, "alpha", 1.0);
+mpld3.Line = function(ax, prop){
+    this.name = "mpld3.Line";
+    this.ax = ax;
+
+    var required = ["data"]
+    var defaults = {x_index: 0,
+		    y_index: 1,
+		    color: "salmon",
+		    linewidth: 2,
+		    dasharray: "10,0",
+		    fill: "none",
+		    alpha: 1.0};
+    
+    this.prop = mpld3.process_props(this, prop, defaults, required);
+    this.data = ax.fig.data[this.prop.data];
 };
 
 mpld3.Line.prototype.draw = function(){
     // TODO: style stuff here
     this.line = d3.svg.line()
-        .x(function(d) {return this.ax.x(d[this.x_index]);})
-        .y(function(d) {return this.ax.y(d[this.y_index]);})
+        .x(function(d) {return this.ax.x(d[this.prop.x_index]);})
+        .y(function(d) {return this.ax.y(d[this.prop.y_index]);})
         .interpolate("linear")
         .defined(function (d) {return !isNaN(d[0]) && !isNaN(d[1]); });
 
     this.lineobj = this.ax.axes.append("svg:path")
         .attr("d", this.line(this.data))
-        .attr('class', this.lineid)
-	.style("stroke", this.color)
-	.style("stroke-width", this.linewidth)
-	.style("stroke-dasharray", this.dasharray)
-	.style("fill", this.fill)
-	.style("stroke-opacity", this.alpha);
+        .attr('class', this.prop.lineid)
+	.style("stroke", this.prop.color)
+	.style("stroke-width", this.prop.linewidth)
+	.style("stroke-dasharray", this.prop.dasharray)
+	.style("fill", this.prop.fill)
+	.style("stroke-opacity", this.prop.alpha);
 }
 
 mpld3.Line.prototype.zoomed = function(){
@@ -476,32 +489,36 @@ mpld3.Line.prototype.zoomed = function(){
 
 
 /* Markers Element */
-mpld3.Markers = function(ax, markerspec){
+mpld3.Markers = function(ax, prop){
+    this.name = "mpld3.Markers";
     this.ax = ax;
-    this.data = ax.fig.data[markerspec.data];
-    this.x_index = mpld3.get_default(markerspec, "x_index", 0);
-    this.y_index = mpld3.get_default(markerspec, "y_index", 1);
-    this.facecolor = mpld3.get_default(markerspec, "facecolor", "salmon");
-    this.edgecolor = mpld3.get_default(markerspec, "edgecolor", "black");
-    this.edgewidth = mpld3.get_default(markerspec, "edgewidth", 1);
-    this.alpha = mpld3.get_default(markerspec, "alpha", 1.0);
+    this.id = Math.floor(Math.random() * 1E12);
+    
+    var required = ["data"];
+    var defaults = {x_index: 0,
+		    y_index: 1,
+		    facecolor: "salmon",
+		    edgecolor: "black",
+		    edgewidth: 1,
+		    alpha: 1.0,
+		    markersize: 6,
+		    markername: "circle",
+		    markerpath: null};
+    this.prop = mpld3.process_props(this, prop, defaults, required);
+    this.data = ax.fig.data[this.prop.data];
 
-    markersize = mpld3.get_default(markerspec, "markersize", 6);
-    markername = mpld3.get_default(markerspec, "markername", "circle");
-    markerpath = mpld3.get_default(markerspec, "markerpath", null);
-
-    if(markerpath !== null){
-	this.marker = construct_SVG_path(markerpath);
+    if(this.prop.markerpath !== null){
+	this.marker = construct_SVG_path(this.prop.markerpath);
     }else{
-	this.marker = d3.svg.symbol(markername)
-	                           .size(Math.pow(markersize, 2));
+	this.marker = d3.svg.symbol(this.prop.markername)
+	                           .size(Math.pow(this.prop.markersize, 2));
     }
 };
 
 mpld3.Markers.prototype.translate = function(d){
     { return "translate("
-      + this.ax.x(d[this.x_index]) + ","
-      + this.ax.y(d[this.y_index]) + ")"; };
+      + this.ax.x(d[this.prop.x_index]) + ","
+      + this.ax.y(d[this.prop.y_index]) + ")"; };
 };
 
 mpld3.Markers.prototype.draw = function(){
@@ -513,11 +530,11 @@ mpld3.Markers.prototype.draw = function(){
           .attr('class', 'points' + this.id)
           .attr("d", this.marker)
         .attr("transform", this.translate.bind(this))
-        .style("stroke-width", this.edgewidth)
-        .style("stroke", this.edgecolor)
-        .style("fill", this.facecolor)
-        .style("fill-opacity", this.alpha)
-        .style("stroke-opacity", this.alpha);
+        .style("stroke-width", this.prop.edgewidth)
+        .style("stroke", this.prop.edgecolor)
+        .style("fill", this.prop.facecolor)
+        .style("fill-opacity", this.prop.alpha)
+        .style("stroke-opacity", this.prop.alpha);
 }
 
 mpld3.Markers.prototype.zoomed = function(){
@@ -619,12 +636,6 @@ mpld3.process_props = function(obj, properties, defaults, required){
     }
     return properties;
 }
-
-
-// Function to get an attribute, or substitute a default if it doesn't exist
-mpld3.get_default = function(object, attr, default_val){
-    return (attr in object) ? object[attr] : default_val;
-};
 
 // Function to insert some CSS into the header
 mpld3.insert_css = function(selector, attributes){
