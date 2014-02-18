@@ -13,7 +13,17 @@
                      ygridOn: true,
                      lines: [{data:"line1"}],
                      markers: [{data:"line1"}],
-             }
-  ]};
+                     texts: [{position: [3,3],
+                              text: "blue moving",
+                              fontsize: 14,
+                              color: "blue"},
+                             {position: [200,200],
+                              coordinates: "figure",
+                              text: "red stationary",
+                              fontsize: 14,
+                              color: "red"}],
+                    }, 
+                    ]
+             };
   var fig = mpld3.draw_figure("fig01", spec);
 </script>

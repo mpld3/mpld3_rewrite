@@ -6,20 +6,24 @@ var mpld3 = {
 
 
 /* Figure object:
-    figspec contains:
+    prop contains:
       width  : figure width in points (integer; required)
       height : figure height in points (integer; required)
 */
-mpld3.Figure = function(figid, figspec){
-    this.figid = figid;
-    this.root = d3.select("#" + figid);
-    this.width = figspec.width;
-    this.height = figspec.height;
-    this.data = mpld3.get_default(figspec, "data", {});
+mpld3.Figure = function(figid, prop){
+    prop = mpld3.process_props(this, prop,
+			       {data:{}, axes:[]},
+			       ["width", "height"])
+    this.width = prop.width;
+    this.height = prop.height;
+    this.data = prop.data;
 
+    this.figid = figid;
+    this.root = d3.select('#' + figid);
     this.axes = [];
-    for(var i=0; i<figspec.axes.length; i++){
-	this.axes.push(new mpld3.Axes(this, figspec.axes[i]));
+
+    for(var i=0; i<prop.axes.length; i++){
+	this.axes.push(new mpld3.Axes(this, prop.axes[i]));
     }
 }
 
@@ -83,6 +87,7 @@ mpld3.Axes = function(fig, axspec){
     ygridprops = mpld3.get_default(axspec, "ygridprops", {});
     lines = mpld3.get_default(axspec, "lines", []);
     markers = mpld3.get_default(axspec, "markers", []);
+    texts = mpld3.get_default(axspec, "texts", []);
 
     this.sharex = [];
     this.sharey = [];
@@ -164,6 +169,11 @@ mpld3.Axes = function(fig, axspec){
     // Add markers
     for(var i=0; i<markers.length;i++){
 	this.elements.push(new mpld3.Markers(this, markers[i]));
+    }
+
+    // Add text
+    for(var i=0; i<texts.length; i++){
+	this.elements.push(new mpld3.Text(this, texts[i]));
     }
 }
 
@@ -462,11 +472,16 @@ mpld3.Markers = function(ax, markerspec){
     this.edgewidth = mpld3.get_default(markerspec, "edgewidth", 1);
     this.alpha = mpld3.get_default(markerspec, "alpha", 1.0);
 
-    this.markername = mpld3.get_default(markerspec, "markername", "circle");
-    this.markerpath = mpld3.get_default(markerspec, "markerpath", null);
+    markersize = mpld3.get_default(markerspec, "markersize", 6);
+    markername = mpld3.get_default(markerspec, "markername", "circle");
+    markerpath = mpld3.get_default(markerspec, "markerpath", null);
 
-    this.marker = d3.svg.symbol(this.markername);
-    //this.marker = construct_SVG_path(this.markerpath);
+    if(markerpath !== null){
+	this.marker = construct_SVG_path(markerpath);
+    }else{
+	this.marker = d3.svg.symbol(markername)
+	                           .size(Math.pow(markersize, 2));
+    }
 };
 
 mpld3.Markers.prototype.translate = function(d){
@@ -496,6 +511,69 @@ mpld3.Markers.prototype.zoomed = function(){
     this.pointsobj.attr("transform", this.translate.bind(this));
 }
 
+/* Text Element */
+mpld3.Text = function(ax, prop){
+    this.ax = ax;
+    console.log(prop);
+    this.prop = mpld3.process_props(this, prop,
+				    {coordinates: "data",
+				     h_anchor: "start",
+				     v_baseline: "auto",
+				     rotation: 0,
+				     fontsize: 11,
+				     color: "black",
+				     alpha: 1.0},
+				    ["text", "position"]);
+    console.log(this.prop);
+    this.text = this.prop.text;
+    this.position = this.prop.position;
+    console.log(this.position);
+}
+
+mpld3.Text.prototype.draw = function(){
+    var pos_x, pos_y;
+    if(this.prop.coordinates == "data"){
+	pos_x = this.ax.x(this.position[0]);
+	pos_y = this.ax.x(this.position[0]);
+    }else{
+	pos_x = this.position[0];
+	pos_y = this.ax.fig.height - this.position[1];
+    }
+
+    this.obj = this.ax.axes.append("text")
+        .attr("x", pos_x)
+        .attr("y", pos_y);
+
+    if(this.prop.rotation){
+	this.obj.attr("transform", "rotate(" + this.rotation + ","
+                      + pos_x + "," + pos_y + ")");
+    }
+
+    this.obj.attr("class", "text")
+        .text(this.text)
+        .style("text-anchor", this.prop.h_anchor)
+	.style("dominant-baseline", this.prop.v_baseline)
+	.style("font-size", this.prop.fontsize)
+	.style("fill", this.prop.color)
+	.style("opacity", this.prop.alpha);
+}
+
+mpld3.Text.prototype.zoomed = function(){
+    console.log(this.prop.coordinates);
+    if(this.prop.coordinates == "data"){
+	pos_x = this.ax.x(this.position[0]);
+	pos_y = this.ax.y(this.position[1]);
+
+	this.obj.attr("x", pos_x)
+            .attr("y", pos_y);
+
+	if(this.prop.rotation){
+	    this.obj.attr("transform", "rotate(" + this.rotation + ","
+			  + pos_x + "," + pos_y + ")");
+	}
+    }
+}
+
 
 /**********************************************************************/
 /* Data Parsing Functions */
@@ -513,6 +591,23 @@ mpld3.draw_figure = function(figid, spec){
 
 /**********************************************************************/
 /* Convenience Functions                                              */
+
+mpld3.process_props = function(obj, properties, defaults, required){
+    if(typeof(defaults) === "undefined"){defaults = {};}
+    if(typeof(required) === "undefined"){required = [];}
+
+    for(i=0; i<required.length; i++){
+	if(!(required[i] in properties)){
+	    throw "property '" + required[i] + "' must be specified for " + obj;
+	}
+    }
+    for(var property in defaults){
+	if(!(property in properties)){
+	    properties[property] = defaults[property];
+	}
+    }
+    return properties;
+}
 
 
 // Function to get an attribute, or substitute a default if it doesn't exist
