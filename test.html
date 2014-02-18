@@ -1,0 +1,15 @@
+<script type="text/javascript" src="http://d3js.org/d3.v3.min.js"></script>
+<script type="text/javascript" src="js/mpld3.v1.js"></script>
+<div id="fig01"></div>
+
+
+<script type="text/javascript">
+  var spec = {width: "400",
+              height: "300",
+              axes:[{bbox: [0.1, 0.1, 0.8, 0.8],
+                     xlim: [0, 1],
+                     ylim: [0, 1],
+                     xgridOn: true, ygridOn: true}]
+             }
+  mpld3.draw_figure(spec, "fig01");
+</script>
