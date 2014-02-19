@@ -16,12 +16,13 @@ mpld3.Figure = function(figid, prop){
     this.root = d3.select('#' + figid);
 
     var required = ["width", "height"];
-    var defaults = {data:{}, axes:[]};
+    var defaults = {data:{}, axes:[], toolbar:["reset"]};
     prop = mpld3.process_props(this, prop, defaults, required);
 
     this.width = prop.width;
     this.height = prop.height;
     this.data = prop.data;
+    this.toolbar = new mpld3.Toolbar(this, prop.toolbar);
 
     this.axes = [];
     for(var i=0; i<prop.axes.length; i++){
@@ -34,6 +35,8 @@ mpld3.Figure.prototype.draw = function(){
         .attr('class', 'mpld3-figure')
         .attr('width', this.width)
         .attr('height', this.height);
+    this.toolbar.draw();
+
     for (var i=0; i<this.axes.length; i++){
 	this.axes[i].draw();
     }
@@ -60,6 +63,36 @@ mpld3.Figure.prototype.reset = function(duration){
     
     for (var i=0; i<this.axes.length; i++){
 	this.axes[i].finalize_reset();
+    }
+};
+
+
+/* Toolbar Object: */
+mpld3.Toolbar = function(fig, prop){
+    this.name = "mpld3.Toolbar";
+    this.fig = fig;
+    this.prop = prop;
+};
+
+mpld3.Toolbar.prototype.draw = function(){
+    this.toolbar = this.fig.root.append("div").attr("class", "toolbar");
+    for(var i=0; i<this.prop.length; i++){
+	switch(this.prop[i])
+	{
+	case "reset":
+            this.toolbar
+		.append("button")
+		.style("background",
+		       "#ffffff url(icons/home.png) no-repeat center")
+	        .style("border", "none")
+		.style("width", "36px")
+		.style("height", "32px")
+	        .style("cursor", "hand")
+		.on("click", this.fig.reset.bind(this.fig));
+	    break;
+	default:
+	    throw "toolbar '" + this.prop[i] + "' not recognized";
+	}
     }
 };
 
@@ -202,7 +235,8 @@ mpld3.Axes.prototype.draw = function(){
               + this.position[1] + ')')
         .attr('width', this.width)
         .attr('height', this.height)
-        .attr('class', "baseaxes");
+        .attr('class', "baseaxes")
+	.style('cursor', 'move');
     
     if(this.prop.zoomable){
 	this.baseaxes.call(this.zoom);
