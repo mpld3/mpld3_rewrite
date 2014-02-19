@@ -11,6 +11,8 @@ ax.text(5, 0, "blue moving", fontsize=18, color="blue")
 ax.text(0.5, 0.4, "red stationary", fontsize=18, color="red",
         transform=ax.transAxes)
 ax.grid(True)
+ax.set_xlabel('x label')
+ax.set_ylabel('y label')
 
 filename = "renderer_test.html"
 print("writing to {0}".format(filename))

@@ -5,6 +5,7 @@ import jinja2
 import numpy as np
 
 # mplexporter can be found at http://github.com/mpld3/mplexporter
+from mplexporter import utils
 from mplexporter.exporter import Exporter
 from mplexporter.renderers import Renderer
 
@@ -95,6 +96,23 @@ class MPLD3Renderer(Renderer):
                               markers=[],
                               texts=[])
         self.figure_json['axes'].append(self.axes_json)
+
+        labels = []
+        if props.get('xlabel'):
+            labels.append(ax.xaxis.label)
+        if props.get('ylabel'):
+            labels.append(ax.yaxis.label)
+
+        for text in labels:
+            content = text.get_text()
+            if content:
+                transform = text.get_transform()
+                position = text.get_position()
+                code, position = Exporter._process_transform(transform, ax,
+                                                             position)
+                style = utils.get_text_style(text)
+                self.draw_text(content, position, code, style)
+
 
     def close_axes(self, ax):
         self.axes_json = None

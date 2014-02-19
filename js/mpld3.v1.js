@@ -682,7 +682,7 @@ mpld3.Text.prototype.draw = function(){
     }
 
     if(this.prop.rotation){
-	this.obj.attr("transform", "rotate(" + this.rotation + ","
+	this.obj.attr("transform", "rotate(" + this.prop.rotation + ","
                       + pos_x + "," + pos_y + ")");
     }
 
