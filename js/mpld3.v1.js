@@ -93,6 +93,11 @@ mpld3.Toolbar.prototype.draw = function(){
 	default:
 	    throw "toolbar '" + this.prop[i] + "' not recognized";
 	}
+	this.toolbar.append("div")
+	    .attr("class", "divider")
+	    .style("width", "5px")
+	    .style("height", "auto")
+	    .style("display", "inline-block");
     }
 };
 
