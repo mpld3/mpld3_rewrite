@@ -98,32 +98,38 @@ mpld3.Toolbar = function(fig, prop){
 };
 
 mpld3.Toolbar.prototype.draw = function(){
-    this.toolbar = this.fig.root.append("div").attr("class", "toolbar");
+    this.toolbar = this.fig.root.append("div").attr("class", "mpld3-toolbar");
     for(var i=0; i<this.prop.length; i++){
 	switch(this.prop[i])
 	{
 	case "reset":
             this.toolbar
 		.append("button")
-		.attr("class", "resetbutton")
+		.attr("class", "mpld3-resetbutton")
 		.style("background",
 		       "#ffffff url(icons/home.png) no-repeat center")
 	        .style("border", "2px outset")
 		.style("width", "36px")
 		.style("height", "32px")
 	        .style("cursor", "hand")
+	        .on("mousedown", function(){d3.select(this)
+                                            .style("border", "2px inset");})
+	        .on("mouseup", function(){d3.select(this)
+                                          .style("border", "2px outset");})
 		.on("click", this.fig.reset.bind(this.fig));
 	    break;
 	case "move":
             this.toolbar
 		.append("button")
-		.attr("class", "movebutton")
+		.attr("class", "mpld3-movebutton")
 		.style("background",
 		       "#eeeeee url(icons/move.png) no-repeat center")
 	        .style("border", "2px inset")
 		.style("width", "36px")
 		.style("height", "32px")
 	        .style("cursor", "hand")
+	        .on("mousedown", function(){d3.select(this)
+                                            .style("border", "2px inset");})
 		.on("click", this.toggle_zoom.bind(this));
 	    break;
 	default:
@@ -140,12 +146,12 @@ mpld3.Toolbar.prototype.draw = function(){
 mpld3.Toolbar.prototype.toggle_zoom = function(){
     this.fig.toggle_zoom();
     if(this.fig.zoom_on){
-	d3.selectAll(".movebutton")
+	d3.selectAll(".mpld3-movebutton")
 	        .style("border", "2px inset")
 		.style("background",
 		       "#eeeeee url(icons/move.png) no-repeat center")
     }else{
-	d3.selectAll(".movebutton")
+	d3.selectAll(".mpld3-movebutton")
 	        .style("border", "2px outset")
 		.style("background",
 		       "#ffffff url(icons/move.png) no-repeat center")
