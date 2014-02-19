@@ -16,7 +16,7 @@ mpld3.Figure = function(figid, prop){
     this.root = d3.select('#' + figid);
 
     var required = ["width", "height"];
-    var defaults = {data:{}, axes:[], toolbar:["reset"]};
+    var defaults = {data:{}, axes:[], toolbar:["reset","move"]};
     prop = mpld3.process_props(this, prop, defaults, required);
 
     this.width = prop.width;
@@ -28,6 +28,7 @@ mpld3.Figure = function(figid, prop){
     for(var i=0; i<prop.axes.length; i++){
 	this.axes.push(new mpld3.Axes(this, prop.axes[i]));
     }
+    this.zoom_on = true;
 }
 
 mpld3.Figure.prototype.draw = function(){
@@ -66,6 +67,28 @@ mpld3.Figure.prototype.reset = function(duration){
     }
 };
 
+mpld3.Figure.prototype.enable_zoom = function(){
+    for(var i=0; i<this.axes.length; i++){
+	this.axes[i].enable_zoom();
+    }
+    this.zoom_on = true;
+};
+
+mpld3.Figure.prototype.disable_zoom = function(){
+    for(var i=0; i<this.axes.length; i++){
+	this.axes[i].disable_zoom();
+    }
+    this.zoom_on = false;
+};
+
+mpld3.Figure.prototype.toggle_zoom = function(){
+    if(this.zoom_on){
+	this.disable_zoom();
+    }else{
+	this.enable_zoom();
+    }
+};
+
 
 /* Toolbar Object: */
 mpld3.Toolbar = function(fig, prop){
@@ -82,13 +105,26 @@ mpld3.Toolbar.prototype.draw = function(){
 	case "reset":
             this.toolbar
 		.append("button")
+		.attr("class", "resetbutton")
 		.style("background",
 		       "#ffffff url(icons/home.png) no-repeat center")
-	        .style("border", "none")
+	        .style("border", "2px outset")
 		.style("width", "36px")
 		.style("height", "32px")
 	        .style("cursor", "hand")
 		.on("click", this.fig.reset.bind(this.fig));
+	    break;
+	case "move":
+            this.toolbar
+		.append("button")
+		.attr("class", "movebutton")
+		.style("background",
+		       "#eeeeee url(icons/move.png) no-repeat center")
+	        .style("border", "2px inset")
+		.style("width", "36px")
+		.style("height", "32px")
+	        .style("cursor", "hand")
+		.on("click", this.toggle_zoom.bind(this));
 	    break;
 	default:
 	    throw "toolbar '" + this.prop[i] + "' not recognized";
@@ -98,6 +134,21 @@ mpld3.Toolbar.prototype.draw = function(){
 	    .style("width", "5px")
 	    .style("height", "auto")
 	    .style("display", "inline-block");
+    }
+};
+
+mpld3.Toolbar.prototype.toggle_zoom = function(){
+    this.fig.toggle_zoom();
+    if(this.fig.zoom_on){
+	d3.selectAll(".movebutton")
+	        .style("border", "2px inset")
+		.style("background",
+		       "#eeeeee url(icons/move.png) no-repeat center")
+    }else{
+	d3.selectAll(".movebutton")
+	        .style("border", "2px outset")
+		.style("background",
+		       "#ffffff url(icons/move.png) no-repeat center")
     }
 };
 
@@ -231,8 +282,7 @@ mpld3.Axes = function(fig, prop){
 mpld3.Axes.prototype.draw = function(){
     this.zoom = d3.behavior.zoom()
         .x(this.xdom)
-        .y(this.ydom)
-        .on("zoom", this.zoomed.bind(this));
+        .y(this.ydom);
     
     this.baseaxes = this.fig.canvas.append("g")
         .attr('transform', 'translate('
@@ -243,9 +293,7 @@ mpld3.Axes.prototype.draw = function(){
         .attr('class', "baseaxes")
 	.style('cursor', 'move');
     
-    if(this.prop.zoomable){
-	this.baseaxes.call(this.zoom);
-    }
+    this.enable_zoom();
     
     this.axesbg = this.baseaxes.append("svg:rect")
         .attr("width", this.width)
@@ -269,6 +317,20 @@ mpld3.Axes.prototype.draw = function(){
     for(var i=0; i<this.elements.length; i++){
 	this.elements[i].draw();
     }
+};
+
+mpld3.Axes.prototype.enable_zoom = function(){
+    if(this.prop.zoomable){
+	this.zoom.on("zoom", this.zoomed.bind(this));
+	this.baseaxes.call(this.zoom);
+    }
+    this.baseaxes.style("cursor", 'move');
+};
+
+mpld3.Axes.prototype.disable_zoom = function(){
+    this.zoom.on("zoom", null);
+    this.baseaxes.on('.zoom', null)
+    this.baseaxes.style('cursor', null);
 };
 
 mpld3.Axes.prototype.zoomed = function(propagate){
