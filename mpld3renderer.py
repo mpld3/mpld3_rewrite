@@ -111,6 +111,27 @@ class MPLD3Renderer(Renderer):
             markers[key] = style[key]
         self.axes_json['markers'].append(markers)
 
+    def draw_text(self, text, position, coordinates, style):
+        text = dict(text=text,
+                    position=tuple(position),
+                    coordinates=coordinates,
+                    h_anchor=TEXT_HA_DICT[style['halign']],
+                    v_baseline=TEXT_VA_DICT[style['valign']],
+                    rotation=-style['rotation'],
+                    fontsize=style['fontsize'],
+                    color=style['color'],
+                    alpha=style['alpha'])
+        self.axes_json['texts'].append(text)
+        
+
+TEXT_VA_DICT = {'bottom': 'auto',
+                'baseline': 'auto',
+                'center': 'central',
+                'top': 'hanging'}
+TEXT_HA_DICT = {'left': 'start',
+                'center': 'middle',
+                'right': 'end'}
+
 
 MPLD3_TEMPLATE = jinja2.Template("""
 <script type="text/javascript" src="{{ d3_loc }}"></script>

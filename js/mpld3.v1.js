@@ -669,15 +669,17 @@ mpld3.Text.prototype.draw = function(){
     var pos_x, pos_y;
     if(this.prop.coordinates == "data"){
 	pos_x = this.ax.x(this.position[0]);
-	pos_y = this.ax.x(this.position[0]);
+	pos_y = this.ax.y(this.position[1]);
+	this.obj = this.ax.axes.append("text")
+            .attr("x", pos_x)
+            .attr("y", pos_y);
     }else{
 	pos_x = this.position[0];
 	pos_y = this.ax.fig.height - this.position[1];
+	this.obj = this.ax.fig.canvas.append("text")
+            .attr("x", pos_x)
+            .attr("y", pos_y);
     }
-
-    this.obj = this.ax.axes.append("text")
-        .attr("x", pos_x)
-        .attr("y", pos_y);
 
     if(this.prop.rotation){
 	this.obj.attr("transform", "rotate(" + this.rotation + ","

@@ -7,6 +7,9 @@ x = np.linspace(0, 10, 50)
 fig, ax = plt.subplots()
 ax.plot(x, np.sin(x), '-ob', alpha=0.5)
 ax.plot(x, np.cos(x), '-or', alpha=0.5)
+ax.text(5, 0, "blue moving", fontsize=18, color="blue")
+ax.text(0.5, 0.4, "red stationary", fontsize=18, color="red",
+        transform=ax.transAxes)
 ax.grid(True)
 
 filename = "renderer_test.html"
