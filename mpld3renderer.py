@@ -66,7 +66,7 @@ class MPLD3Renderer(Renderer):
             # else here can be thought of as "if no break"
             # if we get here, then there were no matching datasets
             self.datasets.append(data)
-            datalabel = "data{0:02d}".format(len(self.figure_json['data']) + 1)
+            datalabel = "data{0:02d}".format(len(self.datasets))
             xindex = 0
             yindex = 1
             
@@ -77,12 +77,13 @@ class MPLD3Renderer(Renderer):
         self.datasets = []
         self.datalabels = []
         self.figure_json = dict(width=props['figwidth'] * props['dpi'],
-                             height=props['figheight'] * props['dpi'],
-                             axes=[],
-                             data={})
+                                height=props['figheight'] * props['dpi'],
+                                axes=[],
+                                data={})
 
     def close_figure(self, fig):
-        for datalabel, dataset in zip(self.datalabels, self.datasets):
+        for i, dataset in enumerate(self.datasets):
+            datalabel = "data{0:02d}".format(i + 1)
             self.figure_json['data'][datalabel] = np.asarray(dataset).tolist()
         self.finished_figures.append((fig, self.figure_json))
 
@@ -93,6 +94,7 @@ class MPLD3Renderer(Renderer):
                               xgridOn=props['xgrid'],
                               ygridOn=props['ygrid'],
                               lines=[],
+                              paths=[],
                               markers=[],
                               texts=[])
         self.figure_json['axes'].append(self.axes_json)
@@ -123,10 +125,22 @@ class MPLD3Renderer(Renderer):
             line[key] = style[key]
         self.axes_json['lines'].append(line)
 
+    def draw_path(self, data, coordinates, pathcodes, style):
+        path = self.add_data(data)
+        path['pathcodes'] = pathcodes
+        for key in ['dasharray', 'alpha', 'facecolor',
+                    'edgecolor', 'edgewidth']:
+            path[key] = style[key]
+        self.axes_json['paths'].append(path)
+
     def draw_markers(self, data, coordinates, style):
         markers = self.add_data(data)
-        for key in ['facecolor', 'edgecolor', 'edgewidth', 'alpha']:
+        for key in ['facecolor', 'edgecolor', 'edgewidth',
+                    'alpha']:
             markers[key] = style[key]
+        if style.get('markerpath'):
+            vertices, codes = style['markerpath']
+            markers['markerpath'] = (vertices.tolist(), codes)
         self.axes_json['markers'].append(markers)
 
     def draw_text(self, text, position, coordinates, style):

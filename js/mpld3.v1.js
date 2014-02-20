@@ -186,6 +186,7 @@ mpld3.Axes = function(fig, prop){
 		    "xgridprops": {},
 		    "ygridprops": {},
 		    "lines": [],
+		    "paths": [],
 		    "markers": [],
 		    "texts": []};
     this.prop = mpld3.process_props(this, prop, defaults, required)
@@ -253,6 +254,7 @@ mpld3.Axes = function(fig, prop){
     }
 
     var axes = this.prop.axes;
+    var paths = this.prop.paths;
     var lines = this.prop.lines;
     var markers = this.prop.markers;
     var texts = this.prop.texts;
@@ -275,6 +277,11 @@ mpld3.Axes = function(fig, prop){
     // Add lines
     for(var i=0; i<lines.length;i++){
 	this.elements.push(new mpld3.Line(this, lines[i]));
+    }
+
+    // Add paths
+    for(var i=0; i<paths.length;i++){
+	this.elements.push(new mpld3.Path(this, paths[i]));
     }
 
     // Add markers
@@ -565,7 +572,6 @@ mpld3.Line = function(ax, prop){
 		    color: "salmon",
 		    linewidth: 2,
 		    dasharray: "10,0",
-		    fill: "none",
 		    alpha: 1.0};
     
     this.prop = mpld3.process_props(this, prop, defaults, required);
@@ -582,17 +588,63 @@ mpld3.Line.prototype.draw = function(){
 
     this.lineobj = this.ax.axes.append("svg:path")
         .attr("d", this.line(this.data))
-        .attr('class', this.prop.lineid)
+        .attr('class', 'line')
 	.style("stroke", this.prop.color)
 	.style("stroke-width", this.prop.linewidth)
 	.style("stroke-dasharray", this.prop.dasharray)
-	.style("fill", this.prop.fill)
+	.style("fill", "none")
 	.style("stroke-opacity", this.prop.alpha);
 }
 
 mpld3.Line.prototype.zoomed = function(){
     // TODO: check if zoomable
     this.lineobj.attr("d", this.line(this.data));
+}
+
+
+/* Path Element */
+mpld3.Path = function(ax, prop){
+    this.name = "mpld3.Path";
+    this.ax = ax;
+
+    var required = ["data"]
+    var defaults = {xindex: 0,
+		    yindex: 1,
+		    coordinates: "data",
+		    facecolor: "green",
+		    edgecolor: "black",
+		    edgewidth: 1,
+		    dasharray: "10,0",
+		    pathcodes: null,
+		    alpha: 1.0};
+    
+    this.prop = mpld3.process_props(this, prop, defaults, required);
+    this.data = ax.fig.data[this.prop.data];
+};
+
+mpld3.Path.prototype.draw = function(){
+    // TODO: check zoom/coordinates
+    this.path = this.ax.axes.append("svg:path")
+        .attr("d", mpld3.construct_SVG_path(this.data, this.prop.pathcodes,
+					    this.ax.x, this.ax.y,
+					    this.prop.xindex,
+					    this.prop.yindex))
+        .attr('class', "path")
+	.style("stroke", this.prop.edgecolor)
+	.style("stroke-width", this.prop.edgewidth)
+	.style("stroke-dasharray", this.prop.dasharray)
+	.style("fill", this.prop.facecolor)
+	.style("stroke-opacity", this.prop.alpha)
+	.style("fill-opacity", this.prop.alpha);
+}
+
+mpld3.Path.prototype.zoomed = function(){
+    // TODO: check if zoomable
+    this.path.attr("d", mpld3.construct_SVG_path(this.data,
+						 this.prop.pathcodes,
+						 this.ax.x, this.ax.y,
+						 this.prop.xindex,
+						 this.prop.yindex));
 }
 
 
@@ -616,7 +668,8 @@ mpld3.Markers = function(ax, prop){
     this.data = ax.fig.data[this.prop.data];
 
     if(this.prop.markerpath !== null){
-	this.marker = construct_SVG_path(this.prop.markerpath);
+	this.marker = mpld3.construct_SVG_path(this.prop.markerpath[0],
+					       this.prop.markerpath[1]);
     }else{
 	this.marker = d3.svg.symbol(this.prop.markername)
 	                           .size(Math.pow(this.prop.markersize, 2));
@@ -769,23 +822,53 @@ mpld3.insert_css = function(selector, attributes){
 
 // This function constructs a mapped SVG path
 // from an input data array
-mpld3.construct_SVG_path = function(data, xmap, ymap){
+mpld3.construct_SVG_path = function(vertices, pathcodes, xmap, ymap,
+				    xindex, yindex){
     xmap = (typeof xmap !== 'undefined') ? xmap : function(x){return x;};
     ymap = (typeof ymap !== 'undefined') ? ymap : function(y){return y;};
+    xindex = (typeof xindex !== 'undefined') ? xindex : 0;
+    yindex = (typeof yindex !== 'undefined') ? yindex : 1;
+
+    // If pathcodes is not defined, we assume it's simply a straight line
+    if(pathcodes === null){
+	pathcodes = ["M"];
+	for(var i=0; i<vertices.length - 1; i++){
+	    pathcodes.push("L");
+	}
+    }
+
     var result = "";
-    for (var i=0;i<data.length;i++){
-	result += data[i][0];
-	if(data[i][0] == 'Z'){
-            continue;
+    var j = 0;  // counter for vertices
+    var n_vertices;
+    for (var i=0;i<pathcodes.length;i++){
+	result += pathcodes[i]
+	switch(pathcodes[i]){
+	    case "M": case "m": case "L": case "l":
+	    n_vertices = 1;
+	    break;
+
+	    case "Q": case "q": case "T": case "t":
+	    n_vertices = 2;
+
+	    case "S": case "s": case "C": case "c":
+	    n_vertices = 3;
+	    break;
+
+	    case "Z":
+	    n_vertices = 0;
+	    break;
+
+	    default:
+	    throw("unrecognized SVG path code: " + pathcodes[i]);
 	}
-	for (var j=0;j<data[i][1].length;j++){
-            if(j % 2 == 0){
-		result += " " + xmap(data[i][1][j]);
-            }else{
-		result += " " + ymap(data[i][1][j]);
-            }
+	for(var jj=j; jj<j+n_vertices; jj++){
+	    result += xmap(vertices[jj][xindex]) + " ";
+	    result += ymap(vertices[jj][yindex]) + " ";
 	}
-	result += " ";
+	j += n_vertices;
+    }
+    if(j != vertices.length){
+	console.warn("Warning: not all vertices used in Path");
     }
     return result;
 };
