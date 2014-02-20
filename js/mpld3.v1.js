@@ -153,12 +153,7 @@ mpld3.Toolbar.prototype.draw = function(){
 
 mpld3.Toolbar.prototype.toggle_zoom = function(){
     this.fig.toggle_zoom();
-    if(this.fig.zoom_on){
-	d3.selectAll(".mpld3-movebutton")
-	        .style("border", "2px inset")
-		.style("background",
-		       "#eeeeee url(icons/move.png) no-repeat 2px 2px");
-    }else{
+    if(!(this.fig.zoom_on)){
 	d3.selectAll(".mpld3-movebutton")
 	        .style("border", "2px outset")
 		.style("background",
