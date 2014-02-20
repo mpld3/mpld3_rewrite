@@ -108,15 +108,19 @@ mpld3.Toolbar.prototype.draw = function(){
 		.append("button")
 		.attr("class", "mpld3-resetbutton")
 		.style("background",
-		       "#ffffff url(icons/home.png) no-repeat center")
+		       "#ffffff url(icons/home.png) no-repeat 1px 1px")
 	        .style("border", "2px outset")
-		.style("width", "36px")
-		.style("height", "32px")
+		.style("width", "38px")
+		.style("height", "36px")
 	        .style("cursor", "hand")
 	        .on("mousedown", function(){d3.select(this)
-                                            .style("border", "2px inset");})
+                                            .style("border", "2px inset")
+					    .style("background",
+						   "#eeeeee url(icons/home.png) no-repeat 2px 2px");})
 	        .on("mouseup", function(){d3.select(this)
-                                          .style("border", "2px outset");})
+                                          .style("border", "2px outset")
+					  .style("background",
+						 "#ffffff url(icons/home.png) no-repeat 1px 1px");})
 		.on("click", this.fig.reset.bind(this.fig));
 	    break;
 	case "move":
@@ -124,13 +128,15 @@ mpld3.Toolbar.prototype.draw = function(){
 		.append("button")
 		.attr("class", "mpld3-movebutton")
 		.style("background",
-		       "#ffffff url(icons/move.png) no-repeat center")
+		       "#ffffff url(icons/move.png) no-repeat 1px 1px")
 	        .style("border", "2px outset")
-		.style("width", "36px")
-		.style("height", "32px")
+		.style("width", "38px")
+		.style("height", "36px")
 	        .style("cursor", "hand")
 	        .on("mousedown", function(){d3.select(this)
-                                            .style("border", "2px inset");})
+                                            .style("border", "2px inset")
+					    .style("background",
+						   "#eeeeee url(icons/move.png) no-repeat 2px 2px");})
 		.on("click", this.toggle_zoom.bind(this));
 	    this.fig.disable_zoom();
 	    break;
@@ -151,12 +157,12 @@ mpld3.Toolbar.prototype.toggle_zoom = function(){
 	d3.selectAll(".mpld3-movebutton")
 	        .style("border", "2px inset")
 		.style("background",
-		       "#eeeeee url(icons/move.png) no-repeat center")
+		       "#eeeeee url(icons/move.png) no-repeat 2px 2px");
     }else{
 	d3.selectAll(".mpld3-movebutton")
 	        .style("border", "2px outset")
 		.style("background",
-		       "#ffffff url(icons/move.png) no-repeat center")
+		       "#ffffff url(icons/move.png) no-repeat 1px 1px");
     }
 };
 
