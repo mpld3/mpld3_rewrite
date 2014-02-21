@@ -6,6 +6,7 @@ x = np.linspace(0, 10, 50)
 
 fig, ax = plt.subplots()
 ax.plot(x, np.sin(x), '-ob', alpha=0.5)
+ax.plot([0.3, 0.5, 0.7], [0.5, 0.8, 0.5], '-ok', lw=2, transform=ax.transAxes)
 ax.plot(x, np.cos(x), '-^r', alpha=0.5)
 ax.text(5, 0, "blue moving", fontsize=18, color="blue")
 ax.text(0.5, 0.4, "red stationary", fontsize=18, color="red",
@@ -15,6 +16,10 @@ ax.set_xlabel('x label')
 ax.set_ylabel('y label')
 
 ax.add_patch(plt.Circle((3, 0), 0.5, ec='k', fc='g', alpha=0.2))
+ax.add_patch(plt.Circle((0.5, 0.5), 0.1, ec='k', fc='y',
+                        transform=ax.transAxes,
+                        alpha=0.2))
+
 
 filename = "renderer_test.html"
 print("writing to {0}".format(filename))

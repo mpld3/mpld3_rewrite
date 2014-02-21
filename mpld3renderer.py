@@ -16,6 +16,10 @@ class MPLD3Renderer(Renderer):
         self.axes_json = None
         self.finished_figures = []
 
+    @staticmethod
+    def datalabel(i):
+        return "data{0:02d}".format(i)
+
     def add_data(self, data):
         """Add a dataset to the current figure
 
@@ -41,6 +45,7 @@ class MPLD3Renderer(Renderer):
         for (i, d) in enumerate(self.datasets):
             if data.shape[0] != d.shape[0]:
                 continue
+
             matches = np.array([np.all(col == d.T, axis=1) for col in data.T])
             if not np.any(matches):
                 continue
@@ -59,16 +64,18 @@ class MPLD3Renderer(Renderer):
                     indices.append(len(new_data) - 1)
 
             self.datasets[i] = np.asarray(new_data).T
-            datalabel = self.datalabels[i]
+            datalabel = self.datalabel(i + 1)
             xindex, yindex = map(int, indices)
             break
         else:
             # else here can be thought of as "if no break"
             # if we get here, then there were no matching datasets
             self.datasets.append(data)
-            datalabel = "data{0:02d}".format(len(self.datasets))
+            datalabel = self.datalabel(len(self.datasets))
             xindex = 0
             yindex = 1
+
+        print data.shape, [d.shape for d in self.datasets], datalabel
             
         self.datalabels.append(datalabel)
         return {"data":datalabel, "xindex":xindex, "yindex":yindex}
@@ -83,7 +90,7 @@ class MPLD3Renderer(Renderer):
 
     def close_figure(self, fig):
         for i, dataset in enumerate(self.datasets):
-            datalabel = "data{0:02d}".format(i + 1)
+            datalabel = self.datalabel(i + 1)
             self.figure_json['data'][datalabel] = np.asarray(dataset).tolist()
         self.finished_figures.append((fig, self.figure_json))
 
@@ -121,12 +128,14 @@ class MPLD3Renderer(Renderer):
 
     def draw_line(self, data, coordinates, style):
         line = self.add_data(data)
+        line['coordinates'] = coordinates
         for key in ['color', 'linewidth', 'dasharray', 'alpha']:
             line[key] = style[key]
         self.axes_json['lines'].append(line)
 
     def draw_path(self, data, coordinates, pathcodes, style):
         path = self.add_data(data)
+        path['coordinates'] = coordinates
         path['pathcodes'] = pathcodes
         for key in ['dasharray', 'alpha', 'facecolor',
                     'edgecolor', 'edgewidth']:
@@ -135,6 +144,7 @@ class MPLD3Renderer(Renderer):
 
     def draw_markers(self, data, coordinates, style):
         markers = self.add_data(data)
+        markers["coordinates"] = coordinates
         for key in ['facecolor', 'edgecolor', 'edgewidth',
                     'alpha']:
             markers[key] = style[key]

@@ -295,6 +295,14 @@ mpld3.Axes = function(fig, prop){
     }
 }
 
+mpld3.Axes.prototype.xfigure = function(x){
+    return x - this.position[0];
+}
+
+mpld3.Axes.prototype.yfigure = function(y){
+    return this.fig.height - this.position[1] - y;
+}
+
 mpld3.Axes.prototype.draw = function(){
     this.zoom = d3.behavior.zoom()
         .x(this.xdom)
@@ -579,12 +587,19 @@ mpld3.Line = function(ax, prop){
 };
 
 mpld3.Line.prototype.draw = function(){
-    // TODO: style stuff here
     this.line = d3.svg.line()
-        .x(function(d) {return this.ax.x(d[this.prop.xindex]);})
-        .y(function(d) {return this.ax.y(d[this.prop.yindex]);})
         .interpolate("linear")
         .defined(function (d) {return !isNaN(d[0]) && !isNaN(d[1]); });
+
+    if(this.prop.coordinates === "data"){
+	this.line
+            .x(function(d) {return this.ax.x(d[this.prop.xindex]);})
+            .y(function(d) {return this.ax.y(d[this.prop.yindex]);});
+    }else{
+	this.line
+            .x(function(d) {return this.ax.xfigure(d[this.prop.xindex]);})
+            .y(function(d) {return this.ax.yfigure(d[this.prop.yindex]);});
+    }
 
     this.lineobj = this.ax.axes.append("svg:path")
         .attr("d", this.line(this.data))
@@ -592,13 +607,15 @@ mpld3.Line.prototype.draw = function(){
 	.style("stroke", this.prop.color)
 	.style("stroke-width", this.prop.linewidth)
 	.style("stroke-dasharray", this.prop.dasharray)
-	.style("fill", "none")
-	.style("stroke-opacity", this.prop.alpha);
+	.style("stroke-opacity", this.prop.alpha)
+	.style("fill", "none");
 }
 
 mpld3.Line.prototype.zoomed = function(){
     // TODO: check if zoomable
-    this.lineobj.attr("d", this.line(this.data));
+    if(this.prop.coordinates === "data"){
+	this.lineobj.attr("d", this.line(this.data));
+    }
 }
 
 
@@ -620,28 +637,36 @@ mpld3.Path = function(ax, prop){
     
     this.prop = mpld3.process_props(this, prop, defaults, required);
     this.data = ax.fig.data[this.prop.data];
+    this.pathcodes = this.prop.pathcodes;
 };
 
 mpld3.Path.prototype.draw = function(){
-    // TODO: check zoom/coordinates
-    this.path = mpld3.path()
-        .x(function(d) {return this.ax.x(d[this.prop.xindex]);})
-        .y(function(d) {return this.ax.y(d[this.prop.yindex]);});
+    if(this.prop.coordinates === "data"){
+	this.path = mpld3.path()
+            .x(function(d) {return this.ax.x(d[this.prop.xindex]);})
+            .y(function(d) {return this.ax.y(d[this.prop.yindex]);});
+    }else{
+	this.path = mpld3.path()
+            .x(function(d) {return this.ax.xfigure(d[this.prop.xindex]);})
+            .y(function(d) {return this.ax.yfigure(d[this.prop.yindex]);});
+    }
 
     this.pathobj = this.ax.axes.append("svg:path")
-        .attr("d", this.path(this.data, this.prop.pathcodes))
+        .attr("d", this.path(this.data, this.pathcodes))
         .attr('class', "path")
 	.style("stroke", this.prop.edgecolor)
 	.style("stroke-width", this.prop.edgewidth)
 	.style("stroke-dasharray", this.prop.dasharray)
-	.style("fill", this.prop.facecolor)
 	.style("stroke-opacity", this.prop.alpha)
+	.style("fill", this.prop.facecolor)
 	.style("fill-opacity", this.prop.alpha);
 }
 
 mpld3.Path.prototype.zoomed = function(){
     // TODO: check if zoomable
-    this.pathobj.attr("d", this.path(this.data, this.prop.pathcodes));
+    if(this.prop.coordinates === "data"){
+	this.pathobj.attr("d", this.path(this.data, this.pathcodes));
+    }
 }
 
 
@@ -654,6 +679,7 @@ mpld3.Markers = function(ax, prop){
     var required = ["data"];
     var defaults = {xindex: 0,
 		    yindex: 1,
+		    coordinates: "data",
 		    facecolor: "salmon",
 		    edgecolor: "black",
 		    edgewidth: 1,
@@ -674,9 +700,15 @@ mpld3.Markers = function(ax, prop){
 };
 
 mpld3.Markers.prototype.translate = function(d){
-    return "translate("
-      + this.ax.x(d[this.prop.xindex]) + ","
-      + this.ax.y(d[this.prop.yindex]) + ")";
+    if(this.prop.coordinates === "data"){
+	return "translate("
+	    + this.ax.x(d[this.prop.xindex]) + ","
+	    + this.ax.y(d[this.prop.yindex]) + ")";
+    }else{
+	return "translate("
+	    + this.ax.xfigure(d[this.prop.xindex]) + ","
+	    + this.ax.yfigure(d[this.prop.yindex]) + ")";
+    }
 };
 
 mpld3.Markers.prototype.draw = function(){
@@ -696,8 +728,9 @@ mpld3.Markers.prototype.draw = function(){
 }
 
 mpld3.Markers.prototype.zoomed = function(){
-    // TODO: check if zoomable
-    this.pointsobj.attr("transform", this.translate.bind(this));
+    if(this.prop.coordinates === "data"){
+	this.pointsobj.attr("transform", this.translate.bind(this));
+    }
 }
 
 /* Text Element */
