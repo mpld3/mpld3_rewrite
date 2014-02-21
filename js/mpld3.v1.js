@@ -577,6 +577,7 @@ mpld3.Line = function(ax, prop){
     var required = ["data"]
     var defaults = {xindex: 0,
 		    yindex: 1,
+		    coordinates: "data",
 		    color: "salmon",
 		    linewidth: 2,
 		    dasharray: "10,0",
