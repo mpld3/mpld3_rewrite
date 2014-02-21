@@ -624,11 +624,12 @@ mpld3.Path = function(ax, prop){
 
 mpld3.Path.prototype.draw = function(){
     // TODO: check zoom/coordinates
-    this.path = this.ax.axes.append("svg:path")
-        .attr("d", mpld3.construct_SVG_path(this.data, this.prop.pathcodes,
-					    this.ax.x, this.ax.y,
-					    this.prop.xindex,
-					    this.prop.yindex))
+    this.path = mpld3.path()
+        .x(function(d) {return this.ax.x(d[this.prop.xindex]);})
+        .y(function(d) {return this.ax.y(d[this.prop.yindex]);});
+
+    this.pathobj = this.ax.axes.append("svg:path")
+        .attr("d", this.path(this.data, this.prop.pathcodes))
         .attr('class', "path")
 	.style("stroke", this.prop.edgecolor)
 	.style("stroke-width", this.prop.edgewidth)
@@ -640,11 +641,7 @@ mpld3.Path.prototype.draw = function(){
 
 mpld3.Path.prototype.zoomed = function(){
     // TODO: check if zoomable
-    this.path.attr("d", mpld3.construct_SVG_path(this.data,
-						 this.prop.pathcodes,
-						 this.ax.x, this.ax.y,
-						 this.prop.xindex,
-						 this.prop.yindex));
+    this.pathobj.attr("d", this.path(this.data, this.prop.pathcodes));
 }
 
 
@@ -668,8 +665,8 @@ mpld3.Markers = function(ax, prop){
     this.data = ax.fig.data[this.prop.data];
 
     if(this.prop.markerpath !== null){
-	this.marker = mpld3.construct_SVG_path(this.prop.markerpath[0],
-					       this.prop.markerpath[1]);
+	this.marker = mpld3.path().call(this.prop.markerpath[0],
+					this.prop.markerpath[1]);
     }else{
 	this.marker = d3.svg.symbol(this.prop.markername)
 	                           .size(Math.pow(this.prop.markersize, 2));
@@ -820,55 +817,64 @@ mpld3.insert_css = function(selector, attributes){
     head.appendChild(style);
 };
 
-// This function constructs a mapped SVG path
-// from an input data array
-mpld3.construct_SVG_path = function(vertices, pathcodes, xmap, ymap,
-				    xindex, yindex){
-    xmap = (typeof xmap !== 'undefined') ? xmap : function(x){return x;};
-    ymap = (typeof ymap !== 'undefined') ? ymap : function(y){return y;};
-    xindex = (typeof xindex !== 'undefined') ? xindex : 0;
-    yindex = (typeof yindex !== 'undefined') ? yindex : 1;
 
-    // If pathcodes is not defined, we assume it's simply a straight line
-    if(pathcodes === null){
-	pathcodes = ["M"];
-	for(var i=0; i<vertices.length - 1; i++){
-	    pathcodes.push("L");
+function mpld3_functor(v) {
+    return typeof v === "function" ? v : function() {
+	return v;
+    };
+}
+
+function mpld3_path(_){
+    var x = function(d){return d[0];}
+    var y = function(d){return d[1];}
+
+    // number of vertices for each SVG code
+    var n_vertices = {M:1, m:1, L:1, l:1, Q:2, q:2, T:2, t:2,
+		      S:3, s:3, C:3, c:3, Z:0, z:0};
+
+    function path(vertices, pathcodes){
+	// If pathcodes is not defined, we assume it's simply a straight line
+	var fx = mpld3_functor(x), fy = mpld3_functor(y);
+	if((pathcodes === null) || (typeof(pathcodes) === "undefined")){
+	    pathcodes = ["M"];
+	    for(var i=0; i<vertices.length - 1; i++){
+		pathcodes.push("L");
+	    }
 	}
+
+	var data = "";
+	var j = 0;  // counter for vertices
+	for (var i=0;i<pathcodes.length;i++){
+	    data += pathcodes[i]
+	    for(var jj=j; jj<j+n_vertices[pathcodes[i]]; jj++){
+		data += fx.call(this, vertices[jj]) + " ";
+		data += fy.call(this, vertices[jj]) + " ";
+	    }
+	    j += n_vertices[pathcodes[i]];
+	}
+	if(j != vertices.length){
+	    console.warn("Warning: not all vertices used in Path");
+	}
+	return data;
     }
 
-    var result = "";
-    var j = 0;  // counter for vertices
-    var n_vertices;
-    for (var i=0;i<pathcodes.length;i++){
-	result += pathcodes[i]
-	switch(pathcodes[i]){
-	    case "M": case "m": case "L": case "l":
-	    n_vertices = 1;
-	    break;
+    path.x = function(_) {
+	if (!arguments.length) return x;
+	x = _;
+	return path;
+    };
 
-	    case "Q": case "q": case "T": case "t":
-	    n_vertices = 2;
+    path.y = function(_) {
+	if (!arguments.length) return y;
+	y = _;
+	return path;
+    };
 
-	    case "S": case "s": case "C": case "c":
-	    n_vertices = 3;
-	    break;
+    path.call = path;
 
-	    case "Z":
-	    n_vertices = 0;
-	    break;
+    return path;
+}
 
-	    default:
-	    throw("unrecognized SVG path code: " + pathcodes[i]);
-	}
-	for(var jj=j; jj<j+n_vertices; jj++){
-	    result += xmap(vertices[jj][xindex]) + " ";
-	    result += ymap(vertices[jj][yindex]) + " ";
-	}
-	j += n_vertices;
-    }
-    if(j != vertices.length){
-	console.warn("Warning: not all vertices used in Path");
-    }
-    return result;
-};
+mpld3.path = function(){
+    return mpld3_path();
+}

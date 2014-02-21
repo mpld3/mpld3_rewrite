@@ -14,9 +14,9 @@ ax.grid(True)
 ax.set_xlabel('x label')
 ax.set_ylabel('y label')
 
-ax.add_patch(plt.Circle((5, 0), 0.5, ec='k', fc='g', alpha=0.5))
+ax.add_patch(plt.Circle((3, 0), 0.5, ec='k', fc='g', alpha=0.2))
 
 filename = "renderer_test.html"
 print("writing to {0}".format(filename))
-open(filename, 'w').write(fig_to_d3(fig))
+open(filename, 'w').write(fig_to_d3(fig, d3_loc='js/d3.v3.min.js'))
 
