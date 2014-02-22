@@ -570,6 +570,7 @@ mpld3.Grid.prototype.zoomed = function(){
 
 
 /* Line Element */
+// TODO: should this be removed? Everything Line can do, Path can do (better)
 mpld3.Line = function(ax, prop){
     this.name = "mpld3.Line";
     this.ax = ax;
@@ -587,23 +588,29 @@ mpld3.Line = function(ax, prop){
     this.data = ax.fig.data[this.prop.data];
 };
 
+mpld3.Line.prototype.filter = function(d){
+    return (!isNaN(d[this.prop.xindex])
+	    && !isNaN(d[this.prop.yindex]));
+};
+
 mpld3.Line.prototype.draw = function(){
-    this.line = d3.svg.line()
+    this.linefunc = d3.svg.line()
         .interpolate("linear")
-        .defined(function (d) {return !isNaN(d[0]) && !isNaN(d[1]); });
+        .defined(this.filter.bind(this));
 
     if(this.prop.coordinates === "data"){
-	this.line
+	this.linefunc
             .x(function(d) {return this.ax.x(d[this.prop.xindex]);})
             .y(function(d) {return this.ax.y(d[this.prop.yindex]);});
     }else{
-	this.line
+	this.linefunc
             .x(function(d) {return this.ax.xfigure(d[this.prop.xindex]);})
             .y(function(d) {return this.ax.yfigure(d[this.prop.yindex]);});
     }
 
-    this.lineobj = this.ax.axes.append("svg:path")
-        .attr("d", this.line(this.data))
+    this.line = this.ax.axes.append("svg:path")
+	.data(this.data)
+        .attr("d", this.linefunc(this.data))
         .attr('class', 'line')
 	.style("stroke", this.prop.color)
 	.style("stroke-width", this.prop.linewidth)
@@ -615,7 +622,7 @@ mpld3.Line.prototype.draw = function(){
 mpld3.Line.prototype.zoomed = function(){
     // TODO: check if zoomable
     if(this.prop.coordinates === "data"){
-	this.lineobj.attr("d", this.line(this.data));
+	this.line.attr("d", this.linefunc(this.data));
     }
 }
 
@@ -634,26 +641,31 @@ mpld3.Path = function(ax, prop){
 		    edgewidth: 1,
 		    dasharray: "10,0",
 		    pathcodes: null,
+		    offset: null,
+		    offsetcoordinates: "data",
 		    alpha: 1.0};
     
     this.prop = mpld3.process_props(this, prop, defaults, required);
     this.data = ax.fig.data[this.prop.data];
     this.pathcodes = this.prop.pathcodes;
+
+    this.xmap = {points:function(x){return x;},
+		 data:this.ax.x.bind(this.ax),
+		 figure:this.ax.xfigure.bind(this.ax)}
+    this.ymap = {points:function(y){return y;},
+		 data:this.ax.y.bind(this.ax),
+		 figure:this.ax.yfigure.bind(this.ax)}    
 };
 
 mpld3.Path.prototype.draw = function(){
-    if(this.prop.coordinates === "data"){
-	this.path = mpld3.path()
-            .x(function(d) {return this.ax.x(d[this.prop.xindex]);})
-            .y(function(d) {return this.ax.y(d[this.prop.yindex]);});
-    }else{
-	this.path = mpld3.path()
-            .x(function(d) {return this.ax.xfigure(d[this.prop.xindex]);})
-            .y(function(d) {return this.ax.yfigure(d[this.prop.yindex]);});
-    }
+    this.pathfunc = mpld3.path()
+	.x(function(d){return this.xmap[this.prop.coordinates]
+		                    (d[this.prop.xindex]);})
+	.y(function(d){return this.ymap[this.prop.coordinates]
+		                    (d[this.prop.yindex]);});
 
-    this.pathobj = this.ax.axes.append("svg:path")
-        .attr("d", this.path(this.data, this.pathcodes))
+    this.path = this.ax.axes.append("svg:path")
+        .attr("d", this.pathfunc(this.data, this.pathcodes))
         .attr('class', "path")
 	.style("stroke", this.prop.edgecolor)
 	.style("stroke-width", this.prop.edgewidth)
@@ -661,12 +673,24 @@ mpld3.Path.prototype.draw = function(){
 	.style("stroke-opacity", this.prop.alpha)
 	.style("fill", this.prop.facecolor)
 	.style("fill-opacity", this.prop.alpha);
+
+    if(this.prop.offset !== null){
+	var offset = [this.xmap[this.prop.offsetcoordinates]
+		          (this.prop.offset[0]),
+		      this.ymap[this.prop.offsetcoordinates]
+		          (this.prop.offset[1])];    
+	this.path.attr("transform", "translate(" + offset + ")");
+    }
 }
 
 mpld3.Path.prototype.zoomed = function(){
-    // TODO: check if zoomable
     if(this.prop.coordinates === "data"){
-	this.pathobj.attr("d", this.path(this.data, this.pathcodes));
+	this.path.attr("d", this.pathfunc(this.data, this.pathcodes));
+    }
+    if(this.prop.offset !== null && this.prop.offsetcoordinates === "data"){
+	var offset = [this.ax.x(this.prop.offset[0]),
+		      this.ax.y(this.prop.offset[1])];
+	this.path.attr("transform", "translate(" + offset + ")");
     }
 }
 
@@ -712,11 +736,15 @@ mpld3.Markers.prototype.translate = function(d){
     }
 };
 
+mpld3.Markers.prototype.filter = function(d){
+    return (!isNaN(d[this.prop.xindex])
+	    && !isNaN(d[this.prop.yindex]));
+};
+
 mpld3.Markers.prototype.draw = function(){
     this.pointsobj = this.ax.axes.append("svg:g")
         .selectAll("scatter-dots-" + this.id)
-        .data(this.data.filter(
-            function(d){return !isNaN(d[0]) && !isNaN(d[1]); }))
+        .data(this.data.filter(this.filter.bind(this)))
         .enter().append("svg:path")
           .attr('class', 'points' + this.id)
           .attr("d", this.marker)
@@ -726,7 +754,7 @@ mpld3.Markers.prototype.draw = function(){
           .style("fill", this.prop.facecolor)
           .style("fill-opacity", this.prop.alpha)
           .style("stroke-opacity", this.prop.alpha);
-}
+};
 
 mpld3.Markers.prototype.zoomed = function(){
     if(this.prop.coordinates === "data"){

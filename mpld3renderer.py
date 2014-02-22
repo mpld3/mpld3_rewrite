@@ -1,6 +1,7 @@
 import random
 import json
 import jinja2
+import itertools
 
 import numpy as np
 
@@ -75,8 +76,6 @@ class MPLD3Renderer(Renderer):
             xindex = 0
             yindex = 1
 
-        print data.shape, [d.shape for d in self.datasets], datalabel
-            
         self.datalabels.append(datalabel)
         return {"data":datalabel, "xindex":xindex, "yindex":yindex}
 
@@ -126,23 +125,31 @@ class MPLD3Renderer(Renderer):
     def close_axes(self, ax):
         self.axes_json = None
 
-    def draw_line(self, data, coordinates, style):
+    # If draw_line() is not implemented, it will be delegated to draw_path
+    def _draw_line(self, data, coordinates, style):
         line = self.add_data(data)
         line['coordinates'] = coordinates
         for key in ['color', 'linewidth', 'dasharray', 'alpha']:
             line[key] = style[key]
         self.axes_json['lines'].append(line)
 
-    def draw_path(self, data, coordinates, pathcodes, style):
+    def draw_path(self, data, coordinates, pathcodes, style,
+                  offset=None, offset_coordinates="data"):
         path = self.add_data(data)
         path['coordinates'] = coordinates
         path['pathcodes'] = pathcodes
+
+        if offset is not None:
+            path['offset'] = list(offset)
+            path['offsetcoordinates'] = offset_coordinates
+
         for key in ['dasharray', 'alpha', 'facecolor',
                     'edgecolor', 'edgewidth']:
             path[key] = style[key]
         self.axes_json['paths'].append(path)
 
-    def draw_markers(self, data, coordinates, style):
+    # If draw_markers is not implemented, it will be delegated to draw_path
+    def _draw_markers(self, data, coordinates, style):
         markers = self.add_data(data)
         markers["coordinates"] = coordinates
         for key in ['facecolor', 'edgecolor', 'edgewidth',
