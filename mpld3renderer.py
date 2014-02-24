@@ -131,7 +131,7 @@ class MPLD3Renderer(Renderer):
     def draw_line(self, data, coordinates, style):
         line = self.add_data(data)
         line['coordinates'] = coordinates
-        for key in ['color', 'linewidth', 'dasharray', 'alpha']:
+        for key in ['color', 'linewidth', 'dasharray', 'alpha', 'zorder']:
             line[key] = style[key]
         self.axes_json['lines'].append(line)
 
@@ -146,7 +146,7 @@ class MPLD3Renderer(Renderer):
             path['offsetcoordinates'] = offset_coordinates
 
         for key in ['dasharray', 'alpha', 'facecolor',
-                    'edgecolor', 'edgewidth']:
+                    'edgecolor', 'edgewidth', 'zorder']:
             path[key] = style[key]
         self.axes_json['paths'].append(path)
 
@@ -155,7 +155,7 @@ class MPLD3Renderer(Renderer):
         markers = self.add_data(data)
         markers["coordinates"] = coordinates
         for key in ['facecolor', 'edgecolor', 'edgewidth',
-                    'alpha']:
+                    'alpha', 'zorder']:
             markers[key] = style[key]
         if style.get('markerpath'):
             vertices, codes = style['markerpath']
@@ -172,7 +172,8 @@ class MPLD3Renderer(Renderer):
                                   for ec in styles['edgecolor']],
                       facecolors=[utils.color_to_hex(fc)
                                   for fc in styles['facecolor']],
-                      edgewidths=styles['linewidth'])
+                      edgewidths=styles['linewidth'],
+                      zorder=styles['zorder'])
 
         def affine_convert(t):
             m = t.get_matrix()
@@ -195,7 +196,8 @@ class MPLD3Renderer(Renderer):
                     rotation=-style['rotation'],
                     fontsize=style['fontsize'],
                     color=style['color'],
-                    alpha=style['alpha'])
+                    alpha=style['alpha'],
+                    zorder=style['zorder'])
         self.axes_json['texts'].append(text)
 
     def draw_image(self, imdata, extent, coordinates, style):

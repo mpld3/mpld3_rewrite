@@ -1,24 +1,28 @@
 /* mpld3.js: javascript backend for displaying interactive matplotlib plots */
+/*   Author: Jake Vanderplas                                                */
+/*   License: 3-clause BSD                                                  */
 
 var mpld3 = {
-    version: "0.1"
+    version: "0.1",
+    figures: []
 };
 
 
-/* Figure object:
-    prop contains:
-      width  : figure width in points (integer; required)
-      height : figure height in points (integer; required)
-*/
+/* Figure object: */
 mpld3.Figure = function(figid, prop){
     this.name = "mpld3.Figure";
     this.figid = figid;
     this.root = d3.select('#' + figid);
 
     var required = ["width", "height"];
-    var defaults = {data:{}, axes:[], toolbar:["reset","move"]};
+    var defaults = {data:{},
+		    axes:[],
+		    toolbar:["reset","move"],
+		    id: mpld3.generate_id(),
+		   };
     prop = mpld3.process_props(this, prop, defaults, required);
 
+    this.id = prop.id;
     this.width = prop.width;
     this.height = prop.height;
     this.data = prop.data;
@@ -99,7 +103,8 @@ mpld3.Toolbar = function(fig, prop){
 };
 
 mpld3.Toolbar.prototype.draw = function(){
-    this.toolbar = this.fig.root.append("div").attr("class", "mpld3-toolbar");
+    this.toolbar = this.fig.root.append("div")
+	                        .attr("class", "mpld3-toolbar");
     for(var i=0; i<this.prop.length; i++){
 	switch(this.prop[i])
 	{
@@ -154,7 +159,7 @@ mpld3.Toolbar.prototype.draw = function(){
 mpld3.Toolbar.prototype.toggle_zoom = function(){
     this.fig.toggle_zoom();
     if(!(this.fig.zoom_on)){
-	d3.selectAll(".mpld3-movebutton")
+	this.toolbar.selectAll(".mpld3-movebutton")
 	        .style("border", "2px outset")
 		.style("background",
 		       "#ffffff url(icons/move.png) no-repeat 1px 1px");
@@ -173,6 +178,7 @@ mpld3.Axes = function(fig, prop){
     var required = ["xlim", "ylim"];
     var defaults = {"bbox": [0.1, 0.1, 0.8, 0.8],
 		    "axesbg": "#FFFFFF",
+		    "id": mpld3.generate_id(),
 		    "axesbgalpha": 1.0,
 		    "xdomain": null,
 		    "ydomain": null,
@@ -307,6 +313,9 @@ mpld3.Axes = function(fig, prop){
     for(var i=0; i<images.length; i++){
 	this.elements.push(new mpld3.Image(this, images[i]));
     }
+
+    // Sort by zorder
+    this.elements.sort(function(a,b){return a.prop.zorder - b.prop.zorder});
 }
 
 mpld3.Axes.prototype.xfigure = function(x){
@@ -449,21 +458,7 @@ mpld3.Axes.prototype.reset = function(){
 };
 
 
-/* Axis object 
-
-Parameters
-----------
-   prop.position : "left"|"right"|"top"|"bottom"
-       position of the axis
-   prop.nticks : integer (optional, default = 10)
-       number of major ticks on the axis
-   prop.tickvalues : list (optional, default = null)
-       if specified, ignore nticks and use these tick values only
-   prop.tickformat : string (optional, default = null)
-       if specified, use the given string formatter for the tick labels
-   prop.stroke : string (optional, default = "black")
-       the color of the axis spine and ticks
-*/
+/* Axis object */
 mpld3.Axis = function(axes, prop){
     this.name = mpld3.Axis;
     this.axes = axes;
@@ -474,8 +469,11 @@ mpld3.Axis = function(axes, prop){
 		    tickformat : null,
 		    fontsize : "11px",
 		    fontcolor : "black",
-		    axiscolor : "black"}
+		    axiscolor : "black",
+		    zorder: 0,
+		    id: mpld3.generate_id()}
     this.prop = mpld3.process_props(this, prop, defaults, required);
+    this.id = this.prop.id;
     
     var position = this.prop.position;
     if (position == "bottom"){
@@ -536,9 +534,12 @@ mpld3.Grid = function(axes, prop){
     var required = ["xy"];
     var defaults = {color : "gray",
 		    dasharray : "2,2",
-		    alpha : "0.5"};
+		    alpha : "0.5",
+		    zorder: 0,
+		    id: mpld3.generate_id()};
     this.prop = mpld3.process_props(this, prop, defaults, required);
     this.cssclass = this.prop.xy + "grid";
+    this.id = this.prop.id;
     
     if(this.prop.xy == "x"){
 	this.transform = "translate(0," + this.axes.height + ")";
@@ -596,10 +597,13 @@ mpld3.Line = function(ax, prop){
 		    color: "salmon",
 		    linewidth: 2,
 		    dasharray: "10,0",
-		    alpha: 1.0};
+		    alpha: 1.0,
+		    zorder: 2,
+		    id: mpld3.generate_id()};
     
     this.prop = mpld3.process_props(this, prop, defaults, required);
     this.data = ax.fig.data[this.prop.data];
+    this.id = this.prop.id;
 };
 
 mpld3.Line.prototype.filter = function(d){
@@ -634,7 +638,7 @@ mpld3.Line.prototype.draw = function(){
 }
 
 mpld3.Line.prototype.zoomed = function(){
-    // TODO: check if zoomable
+    // TODO: check coordinates (data vs figure)
     if(this.prop.coordinates === "data"){
 	this.line.attr("d", this.linefunc(this.data));
     }
@@ -657,11 +661,14 @@ mpld3.Path = function(ax, prop){
 		    pathcodes: null,
 		    offset: null,
 		    offsetcoordinates: "data",
-		    alpha: 1.0};
+		    alpha: 1.0,
+		    zorder: 1,
+		    id: mpld3.generate_id()};
     
     this.prop = mpld3.process_props(this, prop, defaults, required);
     this.data = ax.fig.data[this.prop.data];
     this.pathcodes = this.prop.pathcodes;
+    this.id = this.prop.id;
 
     this.xmap = {points:function(x){return x;},
 		 data:this.ax.x.bind(this.ax),
@@ -726,9 +733,12 @@ mpld3.Markers = function(ax, prop){
 		    alpha: 1.0,
 		    markersize: 6,
 		    markername: "circle",
-		    markerpath: null};
+		    markerpath: null,
+		    zorder: 3,
+		    id: mpld3.generate_id()};
     this.prop = mpld3.process_props(this, prop, defaults, required);
     this.data = ax.fig.data[this.prop.data];
+    this.id = this.prop.id;
 
     if(this.prop.markerpath !== null){
 	this.marker = mpld3.path().call(this.prop.markerpath[0],
@@ -790,12 +800,14 @@ mpld3.PathCollection = function(ax, prop){
 		    edgecolors: ["#000000"],
 		    edgewidths: [1.0],
 		    facecolors: ["#0000FF"],
-		    alphas: [1.0]};
+		    alphas: [1.0],
+		    zorder: 2,
+		    id: mpld3.generate_id()};
     this.prop = mpld3.process_props(this, prop, defaults, required);
     this.paths = prop.paths;
-    this.id = Math.floor(Math.random() * 1E12);
     this.get = function(L, i, dflt){return L.length ? L[i % L.length] : dflt;}
     this.N = Math.max(this.prop.paths.length, this.prop.offsets.length);
+    this.id = this.prop.id;
 
     // For use in the draw() command, expand offsets to size N
     if(this.prop.offsets.length === 0){
@@ -815,7 +827,7 @@ mpld3.PathCollection = function(ax, prop){
 };
 
 mpld3.PathCollection.prototype.transform_func = function(d, i){
-    // here we apply the offset and the individual transform
+    // here we apply the offset and the individual path transform
     var transform;
     var t = this.prop.pathtransforms;
     if(t.length > 0){
@@ -843,7 +855,6 @@ mpld3.PathCollection.prototype.transform_func = function(d, i){
 };
 
 mpld3.PathCollection.prototype.path_func = function(d, i){
-    // TODO: apply path transforms
     var path = this.paths[i % this.paths.length]
     var ret = mpld3.path()
                 .x(function(d){return this.xmap[this.prop.pathcoordinates](d[0]);}.bind(this))
@@ -898,10 +909,13 @@ mpld3.Text = function(ax, prop){
 				     rotation: 0,
 				     fontsize: 11,
 				     color: "black",
-				     alpha: 1.0},
+				     alpha: 1.0,
+				     zorder: 3,
+				     id: mpld3.generate_id()},
 				    ["text", "position"]);
     this.text = this.prop.text;
     this.position = this.prop.position;
+    this.id = this.prop.id;
 };
 
 mpld3.Text.prototype.draw = function(){
@@ -953,8 +967,12 @@ mpld3.Text.prototype.zoomed = function(){
 mpld3.Image = function(ax, prop){
     this.ax = ax;
     required = ["data", "extent"];
-    defaults = {alpha: 1.0, coordinates: "data"};
+    defaults = {alpha: 1.0,
+		coordinates: "data",
+		zorder: 1,
+		id: mpld3.generate_id()};
     this.prop = mpld3.process_props(this, prop, defaults, required);
+    this.id = this.prop.id;
 };
 
 mpld3.Image.prototype.draw = function(){
@@ -984,6 +1002,7 @@ mpld3.draw_figure = function(figid, spec){
 	return null;
     }
     var fig = new mpld3.Figure(figid, spec);
+    mpld3.figures.push(fig);
     fig.draw();
     return fig;
 };
@@ -991,6 +1010,49 @@ mpld3.draw_figure = function(figid, spec){
 
 /**********************************************************************/
 /* Convenience Functions                                              */
+
+mpld3.generate_id = function(N, chars){
+    if(typeof(N) === "undefined"){N=10;}
+    if(typeof(chars) === "undefined"){chars = ("abcdefghijklmnopqrstuvwxyz" +
+					       "ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
+					       "0123456789");}
+    var id = "";
+    for(var i=0; i<N; i++)
+        id += chars.charAt(Math.round(Math.random() * (chars.length - 1)));
+    return id;
+}
+
+mpld3.get_object_by_id = function(id, fig){
+    // TODO: should elements be stored in a map/hash table instead?
+    // It would make this more efficient.
+    var figs_to_search, ax, el;
+    if(typeof(fig) === "undefined"){
+	figs_to_search = mpld3.figures;
+    }else if(typeof(fig.length) === "undefined"){
+	figs_to_search = [fig];
+    }else{
+	figs_to_search = fig;
+    }
+    for(var i=0; i<figs_to_search.length; i++){
+	fig = figs_to_search[i];
+	if(fig.id === id){
+	    return fig;
+	}
+	for(var j=0; j<fig.axes.length; j++){
+	    ax = fig.axes[j];
+	    if(ax.id === id){
+		return ax;
+	    }
+	    for(var k=0; k<ax.elements.length; k++){
+		el = ax.elements[k];
+		if(el.id === id){
+		    return el;
+		}
+	    }
+	}
+    }
+    return null;
+}
 
 mpld3.process_props = function(obj, properties, defaults, required){
     if(typeof(defaults) === "undefined"){defaults = {};}
