@@ -553,6 +553,8 @@ mpld3.Grid = function(axes, prop){
     var defaults = {color : "gray",
 		    dasharray : "2,2",
 		    alpha : "0.5",
+		    nticks : 10,
+		    tickvalues : null,
 		    zorder: 0,
 		    id: mpld3.generate_id()};
     this.prop = mpld3.process_props(this, prop, defaults, required);
@@ -576,6 +578,8 @@ mpld3.Grid = function(axes, prop){
 mpld3.Grid.prototype.draw = function(){
     this.grid = d3.svg.axis()
         .scale(this.scale)
+        .ticks(this.prop.nticks)
+        .tickValues(this.prop.tickvalues)
         .orient(this.position)
         .tickSize(this.tickSize, 0, 0)
         .tickFormat("");

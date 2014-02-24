@@ -102,6 +102,7 @@ class MPLD3Renderer(Renderer):
                               ylim=props['ylim'],
                               xgridOn=props['xgrid'],
                               ygridOn=props['ygrid'],
+                              axes=props['axes'],
                               id=str(id(ax)),
                               lines=[],
                               paths=[],
