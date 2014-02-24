@@ -103,7 +103,8 @@ class MPLD3Renderer(Renderer):
                               paths=[],
                               markers=[],
                               texts=[],
-                              collections=[])
+                              collections=[],
+                              images=[])
         self.figure_json['axes'].append(self.axes_json)
 
         labels = []
@@ -196,6 +197,11 @@ class MPLD3Renderer(Renderer):
                     color=style['color'],
                     alpha=style['alpha'])
         self.axes_json['texts'].append(text)
+
+    def draw_image(self, imdata, extent, coordinates, style):
+        image = dict(data=imdata, extent=extent, coordinates=coordinates)
+        image.update(style)
+        self.axes_json['images'].append(image)
         
 
 TEXT_VA_DICT = {'bottom': 'auto',

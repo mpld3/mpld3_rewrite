@@ -188,7 +188,9 @@ mpld3.Axes = function(fig, prop){
 		    "lines": [],
 		    "paths": [],
 		    "markers": [],
-		    "texts": []};
+		    "texts": [],
+		    "collections": [],
+		    "images": []};
     this.prop = mpld3.process_props(this, prop, defaults, required)
     this.prop.xdomain = this.prop.xdomain || this.prop.xlim;
     this.prop.ydomain = this.prop.ydomain || this.prop.ylim;
@@ -259,6 +261,7 @@ mpld3.Axes = function(fig, prop){
     var markers = this.prop.markers;
     var texts = this.prop.texts;
     var collections = this.prop.collections;
+    var images = this.prop.images;
 
     // Add axes
     for(var i=0; i<axes.length; i++){
@@ -298,6 +301,11 @@ mpld3.Axes = function(fig, prop){
     // Add collections
     for(var i=0; i<collections.length; i++){
 	this.elements.push(new mpld3.PathCollection(this, collections[i]));
+    }
+
+    // Add images
+    for(var i=0; i<images.length; i++){
+	this.elements.push(new mpld3.Image(this, images[i]));
     }
 }
 
@@ -894,7 +902,7 @@ mpld3.Text = function(ax, prop){
 				    ["text", "position"]);
     this.text = this.prop.text;
     this.position = this.prop.position;
-}
+};
 
 mpld3.Text.prototype.draw = function(){
     var pos_x, pos_y;
@@ -924,7 +932,7 @@ mpld3.Text.prototype.draw = function(){
 	.style("font-size", this.prop.fontsize)
 	.style("fill", this.prop.color)
 	.style("opacity", this.prop.alpha);
-}
+};
 
 mpld3.Text.prototype.zoomed = function(){
     if(this.prop.coordinates == "data"){
@@ -939,8 +947,33 @@ mpld3.Text.prototype.zoomed = function(){
 			  + pos_x + "," + pos_y + ")");
 	}
     }
-}
+};
 
+/* Image Object */
+mpld3.Image = function(ax, prop){
+    this.ax = ax;
+    required = ["data", "extent"];
+    defaults = {alpha: 1.0, coordinates: "data"};
+    this.prop = mpld3.process_props(this, prop, defaults, required);
+};
+
+mpld3.Image.prototype.draw = function(){
+    this.image = this.ax.axes.append("svg:image")
+	.attr('class', 'mpld3-image')
+        .attr('xlink:href', "data:image/png;base64," + this.prop.data)
+	.style({'opacity': this.prop.alpha})
+        .attr("preserveAspectRatio", "none");
+    this.zoomed();
+};
+
+mpld3.Image.prototype.zoomed = function(){
+    var extent = this.prop.extent;
+    this.image
+	.attr("x", this.ax.x(extent[0]))
+        .attr("y", this.ax.y(extent[3]))
+        .attr("width", this.ax.x(extent[1]) - this.ax.x(extent[0]))
+        .attr("height", this.ax.y(extent[2]) - this.ax.y(extent[3]));
+};
 
 /**********************************************************************/
 /* Data Parsing Functions */
