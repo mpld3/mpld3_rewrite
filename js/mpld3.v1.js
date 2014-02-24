@@ -20,17 +20,16 @@ mpld3.Figure = function(figid, prop){
 		    toolbar:["reset","move"],
 		    id: mpld3.generate_id(),
 		   };
-    prop = mpld3.process_props(this, prop, defaults, required);
+    this.prop = mpld3.process_props(this, prop, defaults, required);
 
-    this.id = prop.id;
-    this.width = prop.width;
-    this.height = prop.height;
-    this.data = prop.data;
-    this.toolbar = new mpld3.Toolbar(this, prop.toolbar);
+    this.width = this.prop.width;
+    this.height = this.prop.height;
+    this.data = this.prop.data;
+    this.toolbar = new mpld3.Toolbar(this, this.prop.toolbar);
 
     this.axes = [];
     for(var i=0; i<prop.axes.length; i++){
-	this.axes.push(new mpld3.Axes(this, prop.axes[i]));
+	this.axes.push(new mpld3.Axes(this, this.prop.axes[i]));
     }
 }
 
@@ -196,6 +195,8 @@ mpld3.Axes = function(fig, prop){
 		    "markers": [],
 		    "texts": [],
 		    "collections": [],
+		    "sharex": [],
+		    "sharey": [],
 		    "images": []};
     this.prop = mpld3.process_props(this, prop, defaults, required)
     this.prop.xdomain = this.prop.xdomain || this.prop.xlim;
@@ -205,6 +206,7 @@ mpld3.Axes = function(fig, prop){
 
     this.sharex = [];
     this.sharey = [];
+
     this.elements = [];
     
     var bbox = this.prop.bbox;
@@ -327,6 +329,14 @@ mpld3.Axes.prototype.yfigure = function(y){
 }
 
 mpld3.Axes.prototype.draw = function(){
+    for(var i=0; i<this.prop.sharex.length; i++){
+	this.sharex.push(mpld3.get_object_by_id(this.prop.sharex[i]));
+    }
+
+    for(var i=0; i<this.prop.sharey.length; i++){
+	this.sharey.push(mpld3.get_object_by_id(this.prop.sharey[i]));
+    }
+
     this.zoom = d3.behavior.zoom()
         .x(this.xdom)
         .y(this.ydom);
@@ -395,11 +405,13 @@ mpld3.Axes.prototype.zoomed = function(propagate){
     if(propagate){
 	// update shared x axes
 	for(var i=0; i<this.sharex.length; i++){
+	    if(this.sharex[i] === null) continue;
 	    this.sharex[i].zoom.x().domain(this.zoom.x().domain());
 	    this.sharex[i].zoomed(false);
 	}
 	// update shared y axes
 	for(var i=0; i<this.sharey.length; i++){
+	    if(this.sharey[i] === null) continue;
 	    this.sharey[i].zoom.y().domain(this.zoom.y().domain());
 	    this.sharey[i].zoomed(false);
 	}
@@ -473,7 +485,6 @@ mpld3.Axis = function(axes, prop){
 		    zorder: 0,
 		    id: mpld3.generate_id()}
     this.prop = mpld3.process_props(this, prop, defaults, required);
-    this.id = this.prop.id;
     
     var position = this.prop.position;
     if (position == "bottom"){
@@ -539,7 +550,6 @@ mpld3.Grid = function(axes, prop){
 		    id: mpld3.generate_id()};
     this.prop = mpld3.process_props(this, prop, defaults, required);
     this.cssclass = this.prop.xy + "grid";
-    this.id = this.prop.id;
     
     if(this.prop.xy == "x"){
 	this.transform = "translate(0," + this.axes.height + ")";
@@ -603,7 +613,6 @@ mpld3.Line = function(ax, prop){
     
     this.prop = mpld3.process_props(this, prop, defaults, required);
     this.data = ax.fig.data[this.prop.data];
-    this.id = this.prop.id;
 };
 
 mpld3.Line.prototype.filter = function(d){
@@ -668,7 +677,6 @@ mpld3.Path = function(ax, prop){
     this.prop = mpld3.process_props(this, prop, defaults, required);
     this.data = ax.fig.data[this.prop.data];
     this.pathcodes = this.prop.pathcodes;
-    this.id = this.prop.id;
 
     this.xmap = {points:function(x){return x;},
 		 data:this.ax.x.bind(this.ax),
@@ -721,7 +729,6 @@ mpld3.Path.prototype.zoomed = function(){
 mpld3.Markers = function(ax, prop){
     this.name = "mpld3.Markers";
     this.ax = ax;
-    this.id = Math.floor(Math.random() * 1E12);
     
     var required = ["data"];
     var defaults = {xindex: 0,
@@ -738,7 +745,6 @@ mpld3.Markers = function(ax, prop){
 		    id: mpld3.generate_id()};
     this.prop = mpld3.process_props(this, prop, defaults, required);
     this.data = ax.fig.data[this.prop.data];
-    this.id = this.prop.id;
 
     if(this.prop.markerpath !== null){
 	this.marker = mpld3.path().call(this.prop.markerpath[0],
@@ -771,7 +777,7 @@ mpld3.Markers.prototype.draw = function(){
     this.pointsobj = this.group.selectAll("paths")
         .data(this.data.filter(this.filter.bind(this)))
         .enter().append("svg:path")
-          .attr('class', 'points' + this.id)
+          .attr('class', 'mpld3-marker')
           .attr("d", this.marker)
           .attr("transform", this.translate.bind(this))
           .style("stroke-width", this.prop.edgewidth)
@@ -807,7 +813,6 @@ mpld3.PathCollection = function(ax, prop){
     this.paths = prop.paths;
     this.get = function(L, i, dflt){return L.length ? L[i % L.length] : dflt;}
     this.N = Math.max(this.prop.paths.length, this.prop.offsets.length);
-    this.id = this.prop.id;
 
     // For use in the draw() command, expand offsets to size N
     if(this.prop.offsets.length === 0){
@@ -884,7 +889,7 @@ mpld3.PathCollection.prototype.draw = function(){
                    .data(this.offsets)
                    .enter().append("svg:path")
                       .attr("vector-effect", "non-scaling-stroke")
-                      .attr("class", "paths" + this.id)
+                      .attr("class", "mpld3-path")
                       .attr("d", this.path_func.bind(this))
                       .attr("style", this.style_func.bind(this))
                       .attr("transform", this.transform_func.bind(this));
@@ -915,7 +920,6 @@ mpld3.Text = function(ax, prop){
 				    ["text", "position"]);
     this.text = this.prop.text;
     this.position = this.prop.position;
-    this.id = this.prop.id;
 };
 
 mpld3.Text.prototype.draw = function(){
@@ -972,7 +976,6 @@ mpld3.Image = function(ax, prop){
 		zorder: 1,
 		id: mpld3.generate_id()};
     this.prop = mpld3.process_props(this, prop, defaults, required);
-    this.id = this.prop.id;
 };
 
 mpld3.Image.prototype.draw = function(){
@@ -1035,17 +1038,17 @@ mpld3.get_object_by_id = function(id, fig){
     }
     for(var i=0; i<figs_to_search.length; i++){
 	fig = figs_to_search[i];
-	if(fig.id === id){
+	if(fig.prop.id === id){
 	    return fig;
 	}
 	for(var j=0; j<fig.axes.length; j++){
 	    ax = fig.axes[j];
-	    if(ax.id === id){
+	    if(ax.prop.id === id){
 		return ax;
 	    }
 	    for(var k=0; k<ax.elements.length; k++){
 		el = ax.elements[k];
-		if(el.id === id){
+		if(el.prop.id === id){
 		    return el;
 		}
 	    }

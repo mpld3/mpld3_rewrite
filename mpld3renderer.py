@@ -85,7 +85,8 @@ class MPLD3Renderer(Renderer):
         self.figure_json = dict(width=props['figwidth'] * props['dpi'],
                                 height=props['figheight'] * props['dpi'],
                                 axes=[],
-                                data={})
+                                data={},
+                                id=id(fig))
 
     def close_figure(self, fig):
         for i, dataset in enumerate(self.datasets):
@@ -99,6 +100,7 @@ class MPLD3Renderer(Renderer):
                               ylim=props['ylim'],
                               xgridOn=props['xgrid'],
                               ygridOn=props['ygrid'],
+                              id=id(ax),
                               lines=[],
                               paths=[],
                               markers=[],
@@ -106,6 +108,12 @@ class MPLD3Renderer(Renderer):
                               collections=[],
                               images=[])
         self.figure_json['axes'].append(self.axes_json)
+
+        # Get shared axes info
+        xsib = ax.get_shared_x_axes().get_siblings(ax)
+        ysib = ax.get_shared_y_axes().get_siblings(ax)
+        self.axes_json['sharex'] = [id(axi) for axi in xsib]
+        self.axes_json['sharey'] = [id(axi) for axi in ysib]
 
         labels = []
         if props.get('xlabel'):
@@ -179,6 +187,7 @@ class MPLD3Renderer(Renderer):
             m = t.get_matrix()
             return m[0, :2].tolist() + m[1, :2].tolist() + m[2, :2].tolist()
 
+        # TODO: write offsets to data
         paths = dict(paths=[(v.tolist(), p) for (v, p) in paths],
                      offsets=offsets.tolist(),
                      pathtransforms=[affine_convert(t)
