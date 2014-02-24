@@ -21,7 +21,7 @@ class MPLD3Renderer(Renderer):
     def datalabel(i):
         return "data{0:02d}".format(i)
 
-    def add_data(self, data):
+    def add_data(self, data, key="data"):
         """Add a dataset to the current figure
 
         If the dataset matches any already added data, we use that instead.
@@ -30,6 +30,8 @@ class MPLD3Renderer(Renderer):
         ----------
         data : array_like
             a shape [N,2] array of data
+        key : string (optional)
+            the key to use for the data
 
         Returns
         -------
@@ -77,7 +79,7 @@ class MPLD3Renderer(Renderer):
             yindex = 1
 
         self.datalabels.append(datalabel)
-        return {"data":datalabel, "xindex":xindex, "yindex":yindex}
+        return {key:datalabel, "xindex":xindex, "yindex":yindex}
 
     def open_figure(self, fig, props):
         self.datasets = []
@@ -188,14 +190,13 @@ class MPLD3Renderer(Renderer):
             m = t.get_matrix()
             return m[0, :2].tolist() + m[1, :2].tolist() + m[2, :2].tolist()
 
-        # TODO: write offsets to data
-        paths = dict(paths=[(v.tolist(), p) for (v, p) in paths],
-                     offsets=offsets.tolist(),
-                     pathtransforms=[affine_convert(t)
-                                     for t in path_transforms])
-        paths.update(styles)
-        paths['id'] = str(id(mplobj))
-        self.axes_json['collections'].append(paths)
+        pathsdict = self.add_data(offsets, "offsets")
+        pathsdict['paths'] = [(v.tolist(), p) for (v, p) in paths]
+        pathsdict['pathtransforms'] = [affine_convert(t)
+                                   for t in path_transforms]
+        pathsdict.update(styles)
+        pathsdict['id'] = str(id(mplobj))
+        self.axes_json['collections'].append(pathsdict)
 
 
     def draw_text(self, text, position, coordinates, style, mplobj=None):

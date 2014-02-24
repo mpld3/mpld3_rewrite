@@ -93,6 +93,16 @@ mpld3.Figure.prototype.toggle_zoom = function(){
     }
 };
 
+mpld3.Figure.prototype.get_data = function(data){
+    if(data === null || typeof(data) === "undefined"){
+	return null;
+    }else if(typeof(data) === "string"){
+	return this.data[data];
+    }else{
+	return data;
+    }
+}
+
 
 /* Toolbar Object: */
 mpld3.Toolbar = function(fig, prop){
@@ -609,7 +619,7 @@ mpld3.Line = function(ax, prop){
 		    id: mpld3.generate_id()};
     
     this.prop = mpld3.process_props(this, prop, defaults, required);
-    this.data = ax.fig.data[this.prop.data];
+    this.data = ax.fig.get_data(this.prop.data);
 };
 
 mpld3.Line.prototype.filter = function(d){
@@ -672,7 +682,7 @@ mpld3.Path = function(ax, prop){
 		    id: mpld3.generate_id()};
     
     this.prop = mpld3.process_props(this, prop, defaults, required);
-    this.data = ax.fig.data[this.prop.data];
+    this.data = ax.fig.get_data(this.prop.data);
     this.pathcodes = this.prop.pathcodes;
 
     this.xmap = {points:function(x){return x;},
@@ -741,7 +751,7 @@ mpld3.Markers = function(ax, prop){
 		    zorder: 3,
 		    id: mpld3.generate_id()};
     this.prop = mpld3.process_props(this, prop, defaults, required);
-    this.data = ax.fig.data[this.prop.data];
+    this.data = ax.fig.get_data(this.prop.data);
 
     if(this.prop.markerpath !== null){
 	this.marker = mpld3.path().call(this.prop.markerpath[0],
@@ -796,7 +806,9 @@ mpld3.PathCollection = function(ax, prop){
     window.prop = prop;
     this.ax = ax;
     var required = ["paths", "offsets"]
-    var defaults = {pathtransforms: [],
+    var defaults = {xindex: 0,
+		    yindex: 1,
+		    pathtransforms: [],
 		    pathcoordinates: "points",
 		    offsetcoordinates: "data",
 		    offsetorder: "before",
@@ -809,15 +821,19 @@ mpld3.PathCollection = function(ax, prop){
     this.prop = mpld3.process_props(this, prop, defaults, required);
     this.paths = prop.paths;
     this.get = function(L, i, dflt){return L.length ? L[i % L.length] : dflt;}
-    this.N = Math.max(this.prop.paths.length, this.prop.offsets.length);
+
+    var offsets = this.ax.fig.get_data(this.prop.offsets);
+    if(offsets === null || offsets.length === 0){
+	offsets = [null];
+    }
 
     // For use in the draw() command, expand offsets to size N
-    if(this.prop.offsets.length === 0){
-	this.prop.offsets = [null];
-    }
+    var N = Math.max(this.prop.paths.length, offsets.length);
+
     this.offsets = [];
-    for(var i=0; i<this.N; i++){
-	this.offsets.push(this.prop.offsets[i % this.prop.offsets.length]);
+    for(var i=0; i<N; i++){
+	var o = offsets[i % offsets.length];
+	this.offsets.push([o[this.prop.xindex], o[this.prop.yindex]]);
     }
 
     this.xmap = {points:function(x){return x;},
