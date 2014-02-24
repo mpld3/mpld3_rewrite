@@ -136,7 +136,7 @@ class MPLD3Renderer(Renderer):
         self.axes_json = None
 
     # If draw_line() is not implemented, it will be delegated to draw_path
-    def draw_line(self, data, coordinates, style):
+    def draw_line(self, data, coordinates, style, mplobj=None):
         line = self.add_data(data)
         line['coordinates'] = coordinates
         for key in ['color', 'linewidth', 'dasharray', 'alpha', 'zorder']:
@@ -144,7 +144,7 @@ class MPLD3Renderer(Renderer):
         self.axes_json['lines'].append(line)
 
     def draw_path(self, data, coordinates, pathcodes, style,
-                  offset=None, offset_coordinates="data"):
+                  offset=None, offset_coordinates="data", mplobj=None):
         path = self.add_data(data)
         path['coordinates'] = coordinates
         path['pathcodes'] = pathcodes
@@ -159,7 +159,7 @@ class MPLD3Renderer(Renderer):
         self.axes_json['paths'].append(path)
 
     # If draw_markers is not implemented, it will be delegated to draw_path
-    def draw_markers(self, data, coordinates, style):
+    def draw_markers(self, data, coordinates, style, mplobj=None):
         markers = self.add_data(data)
         markers["coordinates"] = coordinates
         for key in ['facecolor', 'edgecolor', 'edgewidth',
@@ -174,7 +174,7 @@ class MPLD3Renderer(Renderer):
     # it will be delegated to draw_path
     def draw_path_collection(self, paths, path_coordinates, path_transforms,
                              offsets, offset_coordinates, offset_order,
-                             styles):
+                             styles, mplobj=None):
         styles = dict(alphas=[styles['alpha']],
                       edgecolors=[utils.color_to_hex(ec)
                                   for ec in styles['edgecolor']],
@@ -196,7 +196,7 @@ class MPLD3Renderer(Renderer):
         self.axes_json['collections'].append(paths)
 
 
-    def draw_text(self, text, position, coordinates, style):
+    def draw_text(self, text, position, coordinates, style, mplobj=None):
         text = dict(text=text,
                     position=tuple(position),
                     coordinates=coordinates,
@@ -209,7 +209,7 @@ class MPLD3Renderer(Renderer):
                     zorder=style['zorder'])
         self.axes_json['texts'].append(text)
 
-    def draw_image(self, imdata, extent, coordinates, style):
+    def draw_image(self, imdata, extent, coordinates, style, mplobj=None):
         image = dict(data=imdata, extent=extent, coordinates=coordinates)
         image.update(style)
         self.axes_json['images'].append(image)
