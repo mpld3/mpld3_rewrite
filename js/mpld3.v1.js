@@ -389,14 +389,11 @@ mpld3.Axes.prototype.disable_zoom = function(){
 };
 
 mpld3.Axes.prototype.zoomed = function(propagate){
+    // TODO: apply propagation fix from aflaxman
+
     // propagate is a boolean specifying whether to propagate movements
     // to shared axes, specified by sharex and sharey.  Default is true.
     propagate = (typeof propagate == 'undefined') ? true : propagate;
-    
-    //console.log(this.zoom.translate());
-    //console.log(this.zoom.scale());
-    //console.log(this.zoom.x().domain());
-    //console.log(this.zoom.y().domain());
     
     for(var i=0; i<this.elements.length; i++){
 	this.elements[i].zoomed();
