@@ -347,9 +347,13 @@ mpld3.Axes.prototype.draw = function(){
 	this.sharey.push(mpld3.get_object_by_id(this.prop.sharey[i]));
     }
 
-    this.zoom = d3.behavior.zoom()
-        .x(this.xdom)
-        .y(this.ydom);
+    this.zoom = d3.behavior.zoom();
+
+    this.zoom.last_t = this.zoom.translate()
+    this.zoom.last_s = this.zoom.scale()
+
+    this.zoom_x = d3.behavior.zoom().x(this.xdom);
+    this.zoom_y = d3.behavior.zoom().y(this.ydom)
     
     this.baseaxes = this.fig.canvas.append("g")
         .attr('transform', 'translate('
@@ -399,30 +403,49 @@ mpld3.Axes.prototype.disable_zoom = function(){
 };
 
 mpld3.Axes.prototype.zoomed = function(propagate){
-    // TODO: apply propagation fix from aflaxman
-
     // propagate is a boolean specifying whether to propagate movements
     // to shared axes, specified by sharex and sharey.  Default is true.
     propagate = (typeof propagate == 'undefined') ? true : propagate;
-    
-    for(var i=0; i<this.elements.length; i++){
-	this.elements[i].zoomed();
-    }
-    
+
     if(propagate){
-	// update shared x axes
-	for(var i=0; i<this.sharex.length; i++){
-	    if(this.sharex[i] === null) continue;
-	    this.sharex[i].zoom.x().domain(this.zoom.x().domain());
-	    this.sharex[i].zoomed(false);
-	}
-	// update shared y axes
-	for(var i=0; i<this.sharey.length; i++){
-	    if(this.sharey[i] === null) continue;
-	    this.sharey[i].zoom.y().domain(this.zoom.y().domain());
-	    this.sharey[i].zoomed(false);
-	}
-    }
+        // update scale and translation of zoom_x and zoom_y,
+        // based on change in this.zoom scale and translation values
+        var dt0 = this.zoom.translate()[0] - this.zoom.last_t[0];
+        var dt1 = this.zoom.translate()[1] - this.zoom.last_t[1];
+        var ds = this.zoom.scale() / this.zoom.last_s;
+
+        this.zoom_x.translate([this.zoom_x.translate()[0]+dt0, 0]);
+        this.zoom_x.scale(this.zoom_x.scale() * ds)
+
+        this.zoom_y.translate([0, this.zoom_y.translate()[1]+dt1]);
+        this.zoom_y.scale(this.zoom_y.scale() * ds)
+
+        // update last translate and scale values for future use
+        this.zoom.last_t = this.zoom.translate();
+        this.zoom.last_s = this.zoom.scale();
+
+        // update shared axeses
+        for(var i=0; i<this.sharex.length; i++){
+          this.sharex[i].zoom_x.translate(this.zoom_x.translate());
+          this.sharex[i].zoom_x.scale(this.zoom_x.scale());
+        }
+        for(var i=0; i<this.sharey.length; i++){
+          this.sharey[i].zoom_y.translate(this.zoom_y.translate());
+          this.sharey[i].zoom_y.scale(this.zoom_y.scale());
+        }
+
+        // render updates
+        for(var i=0; i<this.sharex.length; i++){
+          this.sharex[i].zoomed(false);
+        }
+        for(var i=0; i<this.sharey.length; i++){
+          this.sharey[i].zoomed(false);
+        }
+      }
+
+      for(var i=0; i<this.elements.length; i++){
+        this.elements[i].zoomed();
+      }
 };
 
 mpld3.Axes.prototype.prep_reset = function(){
@@ -462,14 +485,18 @@ mpld3.Axes.prototype.prep_reset = function(){
 
 mpld3.Axes.prototype.finalize_reset = function(){
     this.zoom.scale(1).translate([0, 0]);
+    this.zoom.last_t = this.zoom.translate();
+    this.zoom.last_s = this.zoom.scale();
+    this.zoom_x.scale(1).translate([0, 0]);
+    this.zoom_y.scale(1).translate([0, 0]);
 }
 
 mpld3.Axes.prototype.reset = function(){
     this.prep_reset();
     d3.transition().duration(750).tween("zoom", function() {
 	return function(t) {
-	    this.zoom.x(this.xdom.domain(this.ix(t)))
-		.y(this.ydom.domain(this.iy(t)));
+            this.zoom_x.x(this.xdom.domain(this.ix(t)));
+            this.zoom_y.y(this.ydom.domain(this.iy(t)));
 	    this.zoomed();
 	};
     });
