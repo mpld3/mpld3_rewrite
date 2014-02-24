@@ -102,7 +102,8 @@ class MPLD3Renderer(Renderer):
                               lines=[],
                               paths=[],
                               markers=[],
-                              texts=[])
+                              texts=[],
+                              collections=[])
         self.figure_json['axes'].append(self.axes_json)
 
         labels = []
@@ -126,7 +127,7 @@ class MPLD3Renderer(Renderer):
         self.axes_json = None
 
     # If draw_line() is not implemented, it will be delegated to draw_path
-    def _draw_line(self, data, coordinates, style):
+    def draw_line(self, data, coordinates, style):
         line = self.add_data(data)
         line['coordinates'] = coordinates
         for key in ['color', 'linewidth', 'dasharray', 'alpha']:
@@ -149,7 +150,7 @@ class MPLD3Renderer(Renderer):
         self.axes_json['paths'].append(path)
 
     # If draw_markers is not implemented, it will be delegated to draw_path
-    def _draw_markers(self, data, coordinates, style):
+    def draw_markers(self, data, coordinates, style):
         markers = self.add_data(data)
         markers["coordinates"] = coordinates
         for key in ['facecolor', 'edgecolor', 'edgewidth',
@@ -159,6 +160,30 @@ class MPLD3Renderer(Renderer):
             vertices, codes = style['markerpath']
             markers['markerpath'] = (vertices.tolist(), codes)
         self.axes_json['markers'].append(markers)
+
+    # If draw_path_collection is not implemented,
+    # it will be delegated to draw_path
+    def draw_path_collection(self, paths, path_coordinates, path_transforms,
+                             offsets, offset_coordinates, offset_order,
+                             styles):
+        styles = dict(alphas=[styles['alpha']],
+                      edgecolors=[utils.color_to_hex(ec)
+                                  for ec in styles['edgecolor']],
+                      facecolors=[utils.color_to_hex(fc)
+                                  for fc in styles['facecolor']],
+                      edgewidths=styles['linewidth'])
+
+        def affine_convert(t):
+            m = t.get_matrix()
+            return m[0, :2].tolist() + m[1, :2].tolist() + m[2, :2].tolist()
+
+        paths = dict(paths=[(v.tolist(), p) for (v, p) in paths],
+                     offsets=offsets.tolist(),
+                     pathtransforms=[affine_convert(t)
+                                     for t in path_transforms])
+        paths.update(styles)
+        self.axes_json['collections'].append(paths)
+
 
     def draw_text(self, text, position, coordinates, style):
         text = dict(text=text,

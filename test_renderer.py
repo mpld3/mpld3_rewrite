@@ -38,7 +38,6 @@ def test2(filename):
                alpha=0.3)
 
     print("writing to {0}".format(filename))
-    plt.show()
     open(filename, 'w').write(fig_to_d3(fig, d3_loc='js/d3.v3.min.js'))
     
 
