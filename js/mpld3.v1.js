@@ -486,7 +486,7 @@ mpld3.Axes.prototype.prep_reset = function(){
     
     if (this.prop.xscale === 'date'){
 	var start = this.xdom.domain();
-	var end = this.xdomain;
+	var end = this.prop.xdomain;
 	var interp = d3.interpolate(
             [this.xmap(start[0]), this.xmap(start[1])],
             [this.xmap(end[0]), this.xmap(end[1])]);
