@@ -40,3 +40,7 @@ nosetests.xml
 
 # submodules
 mpld3_rewrite/mplexporter
+
+# temporary files
+*.html
+test_plots/*.png

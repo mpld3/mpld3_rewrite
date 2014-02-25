@@ -25,7 +25,7 @@ def test1(filename):
                             alpha=0.2))
 
     print("writing to {0}".format(filename))
-    open(filename, 'w').write(fig_to_d3(fig, d3_loc='js/d3.v3.min.js'))
+    open(filename, 'w').write(fig_to_d3(fig, d3_url='js/d3.v3.min.js'))
 
 
 def test2(filename):
@@ -38,7 +38,7 @@ def test2(filename):
                alpha=0.3)
 
     print("writing to {0}".format(filename))
-    open(filename, 'w').write(fig_to_d3(fig, d3_loc='js/d3.v3.min.js'))
+    open(filename, 'w').write(fig_to_d3(fig, d3_url='js/d3.v3.min.js'))
 
 
 def test3(filename):
@@ -65,7 +65,7 @@ def test3(filename):
     ax.set_ylim(9, 21)
 
     print("writing to {0}".format(filename))
-    open(filename, 'w').write(fig_to_d3(fig, d3_loc='js/d3.v3.min.js'))
+    open(filename, 'w').write(fig_to_d3(fig, d3_url='js/d3.v3.min.js'))
 
 def test4(filename):
     from sklearn.datasets import load_iris
@@ -92,7 +92,7 @@ def test4(filename):
             axis.set_major_formatter(plt.NullFormatter())
             
     print("writing to {0}".format(filename))
-    open(filename, 'w').write(fig_to_d3(fig, d3_loc='js/d3.v3.min.js'))
+    open(filename, 'w').write(fig_to_d3(fig, d3_url='js/d3.v3.min.js'))
 
 
 
