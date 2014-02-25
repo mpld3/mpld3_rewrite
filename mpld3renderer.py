@@ -132,8 +132,8 @@ class MPLD3Renderer(Renderer):
             if content:
                 transform = text.get_transform()
                 position = text.get_position()
-                code, position = Exporter._process_transform(transform, ax,
-                                                             position)
+                code, position = Exporter.process_transform(transform, ax,
+                                                            position)
                 style = utils.get_text_style(text)
                 self.draw_text(content, position, code, style)
 
@@ -235,7 +235,7 @@ TEXT_HA_DICT = {'left': 'start',
                 'right': 'end'}
 
 
-MPLD3_TEMPLATE = jinja2.Template("""
+HTML_TEMPLATE = jinja2.Template("""
 <script type="text/javascript" src="{{ d3_loc }}"></script>
 <script type="text/javascript" src="{{ mpld3_loc }}"></script>
 
@@ -252,7 +252,7 @@ def fig_to_d3(fig, mpld3_loc="js/mpld3.v1.js",
     renderer = MPLD3Renderer()
     Exporter(renderer).run(fig)
     figure_json = json.dumps(renderer.finished_figures[0][1])
-    return MPLD3_TEMPLATE.render(figid=figid,
-                                 d3_loc=d3_loc,
-                                 mpld3_loc=mpld3_loc,
-                                 figure_json=figure_json)
+    return HTML_TEMPLATE.render(figid=figid,
+                                d3_loc=d3_loc,
+                                mpld3_loc=mpld3_loc,
+                                figure_json=figure_json)
