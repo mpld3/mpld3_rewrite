@@ -208,6 +208,7 @@ mpld3.Axes = function(fig, prop){
 		    "sharex": [],
 		    "sharey": [],
 		    "images": []};
+
     this.prop = mpld3.process_props(this, prop, defaults, required)
     this.prop.xdomain = this.prop.xdomain || this.prop.xlim;
     this.prop.ydomain = this.prop.ydomain || this.prop.ylim;
@@ -228,6 +229,20 @@ mpld3.Axes = function(fig, prop){
     if(this.prop.xscale === 'log'){
 	this.xdom = d3.scale.log();
     }else if(this.prop.xscale === 'date'){
+	this.prop.xdomain = [new Date(this.prop.xdomain[0][0],
+				      this.prop.xdomain[0][1],
+				      this.prop.xdomain[0][2],
+				      this.prop.xdomain[0][3],
+				      this.prop.xdomain[0][4],
+				      this.prop.xdomain[0][5],
+				      this.prop.xdomain[0][6]),
+			     new Date(this.prop.xdomain[1][0],
+				      this.prop.xdomain[1][1],
+				      this.prop.xdomain[1][2],
+				      this.prop.xdomain[1][3],
+				      this.prop.xdomain[1][4],
+				      this.prop.xdomain[1][5],
+				      this.prop.xdomain[1][6])];
 	this.xdom = d3.time.scale();
     }else{
 	this.xdom = d3.scale.linear();
@@ -236,6 +251,20 @@ mpld3.Axes = function(fig, prop){
     if(this.prop.yscale === 'log'){
 	this.ydom = d3.scale.log();
     }else if(this.prop.yscale === 'date'){
+	this.prop.ydomain = [new Date(this.prop.ydomain[0][0],
+				      this.prop.ydomain[0][1],
+				      this.prop.ydomain[0][2],
+				      this.prop.ydomain[0][3],
+				      this.prop.ydomain[0][4],
+				      this.prop.ydomain[0][5],
+				      this.prop.ydomain[0][6]),
+			     new Date(this.prop.ydomain[1][0],
+				      this.prop.ydomain[1][1],
+				      this.prop.ydomain[1][2],
+				      this.prop.ydomain[1][3],
+				      this.prop.ydomain[1][4],
+				      this.prop.ydomain[1][5],
+				      this.prop.ydomain[1][6])];
 	this.ydom = d3.time.scale();
     }else{
 	this.ydom = d3.scale.linear();
@@ -353,7 +382,7 @@ mpld3.Axes.prototype.draw = function(){
     this.zoom.last_s = this.zoom.scale()
 
     this.zoom_x = d3.behavior.zoom().x(this.xdom);
-    this.zoom_y = d3.behavior.zoom().y(this.ydom)
+    this.zoom_y = d3.behavior.zoom().y(this.ydom);
     
     this.baseaxes = this.fig.canvas.append("g")
         .attr('transform', 'translate('
