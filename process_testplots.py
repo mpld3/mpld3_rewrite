@@ -51,7 +51,7 @@ TEMPLATE = """
 
 def combine_testplots(wildcard='test_plots/*.py',
                       outfile='test_plots.html',
-                      d3_url=None):
+                      d3_url=None, mpld3_url=None):
     """Generate figures from the plots and save to an HTML file
 
     Parameters
@@ -62,6 +62,9 @@ def combine_testplots(wildcard='test_plots/*.py',
         the output HTML file for saving the results
     d3_url : string
         the URL of the d3 library to use.  If not specified, a standard web
+        address will be used.
+    mpld3_url : string
+        the URL of the mpld3 library to use.  If not specified, a standard web
         address will be used.
     """
     if isinstance(wildcard, str):
@@ -97,7 +100,8 @@ def combine_testplots(wildcard='test_plots/*.py',
                 fig = None
 
             if fig is not None:
-                fig_html.append(fig_to_d3(fig, d3_url=d3_url))
+                fig_html.append(fig_to_d3(fig, d3_url=d3_url,
+                                          mpld3_url=mpld3_url))
 
                 fig_png = os.path.splitext(filename)[0] + '.png'
                 fig.savefig(fig_png)
@@ -119,6 +123,9 @@ def run_main():
     parser.add_argument("-d", "--d3-url",
                         help="location of d3 library",
                         type=str, default=None)
+    parser.add_argument("-m", "--mpld3-url",
+                        help="location of the mpld3 library",
+                        type=str, default=None)
     parser.add_argument("-o", "--output",
                         help="output filename",
                         type=str, default='test_plots.html')
@@ -131,7 +138,8 @@ def run_main():
 
     combine_testplots(wildcard=wildcard,
                       outfile=args.output,
-                      d3_url=args.d3_url)
+                      d3_url=args.d3_url,
+                      mpld3_url=args.mpld3_url)
     return args.output
     
 

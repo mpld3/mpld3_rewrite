@@ -854,6 +854,13 @@ mpld3.PathCollection = function(ax, prop){
     this.paths = prop.paths;
     this.get = function(L, i, dflt){return L.length ? L[i % L.length] : dflt;}
 
+    if(this.prop.facecolors === null || this.prop.facecolors.length === 0){
+	this.prop.facecolors = ["none"];
+    }
+    if(this.prop.edgecolors === null || this.prop.edgecolors.length === 0){
+	this.prop.edgecolors = ["none"];
+    }
+
     var offsets = this.ax.fig.get_data(this.prop.offsets);
     if(offsets === null || offsets.length === 0){
 	offsets = [null];
