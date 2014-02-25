@@ -182,7 +182,6 @@ class MPLD3Renderer(Renderer):
     def draw_path_collection(self, paths, path_coordinates, path_transforms,
                              offsets, offset_coordinates, offset_order,
                              styles, mplobj=None):
-        print styles
         styles = dict(alphas=[styles['alpha']],
                       edgecolors=[utils.color_to_hex(ec)
                                   for ec in styles['edgecolor']],
