@@ -96,12 +96,17 @@ class MPLD3Renderer(Renderer):
         self.finished_figures.append((fig, self.figure_json))
 
     def open_axes(self, ax, props):
+        print props
         self.axes_json = dict(bbox=props['bounds'],
                               xlim=props['xlim'],
                               ylim=props['ylim'],
                               xgridOn=props['xgrid'],
                               ygridOn=props['ygrid'],
+                              xgridprops=props['xgridstyle'],
+                              ygridprops=props['ygridstyle'],
                               axes=props['axes'],
+                              axesbg=props['axesbg'],
+                              axesbgalpha=props['axesbgalpha'],
                               zoomable=bool(props['dynamic']),
                               id=str(id(ax)),
                               lines=[],
