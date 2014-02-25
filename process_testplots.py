@@ -30,7 +30,7 @@ TEMPLATE = """
 }}
 
 .fig {{
-  height: 396px;
+  height: 400px;
 }}
 </style>
 </head>
@@ -73,7 +73,7 @@ def combine_testplots(wildcard='test_plots/*.py',
         filenames = sum([glob.glob(w) for w in wildcard], [])
 
     fig_html = []
-    fig_names = []
+    fig_png = []
     for filename in filenames:
         dirname, fname = os.path.split(filename)
         modulename = os.path.splitext(fname)[0]
@@ -100,19 +100,20 @@ def combine_testplots(wildcard='test_plots/*.py',
                 fig = None
 
             if fig is not None:
-                fig_html.append(fig_to_d3(fig, d3_url=d3_url,
-                                          mpld3_url=mpld3_url))
+                fig_html.append("\n<div class='fig'>\n{0}\n</div>"
+                                "\n".format(fig_to_d3(fig, d3_url=d3_url,
+                                                      mpld3_url=mpld3_url)))
 
-                fig_png = os.path.splitext(filename)[0] + '.png'
-                fig.savefig(fig_png)
-                fig_names.append("\n<div class='fig'><img src={0}>"
-                                 "</div>\n".format(fig_png))
+                figfile = os.path.splitext(filename)[0] + '.png'
+                fig.savefig(figfile)
+                fig_png.append("\n<div class='fig'><img src={0}>"
+                                 "</div>\n".format(figfile))
                 plt.close(fig)
 
     print("writing results to {0}".format(outfile))
     with open(outfile, 'w') as f:
         f.write(TEMPLATE.format(left_col="".join(fig_html),
-                                right_col="".join(fig_names)))
+                                right_col="".join(fig_png)))
 
 
 def run_main():
