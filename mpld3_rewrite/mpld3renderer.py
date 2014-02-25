@@ -129,6 +129,8 @@ class MPLD3Renderer(Renderer):
             labels.append(ax.xaxis.label)
         if props.get('ylabel'):
             labels.append(ax.yaxis.label)
+        if props.get('title'):
+            labels.append(ax.title)
 
         for text in labels:
             content = text.get_text()
