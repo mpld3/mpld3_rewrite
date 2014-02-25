@@ -103,6 +103,7 @@ class MPLD3Renderer(Renderer):
                               xgridOn=props['xgrid'],
                               ygridOn=props['ygrid'],
                               axes=props['axes'],
+                              zoomable=bool(props['dynamic']),
                               id=str(id(ax)),
                               lines=[],
                               paths=[],
@@ -115,8 +116,10 @@ class MPLD3Renderer(Renderer):
         # Get shared axes info
         xsib = ax.get_shared_x_axes().get_siblings(ax)
         ysib = ax.get_shared_y_axes().get_siblings(ax)
-        self.axes_json['sharex'] = [str(id(axi)) for axi in xsib]
-        self.axes_json['sharey'] = [str(id(axi)) for axi in ysib]
+        self.axes_json['sharex'] = [str(id(axi)) for axi in xsib
+                                    if axi is not ax]
+        self.axes_json['sharey'] = [str(id(axi)) for axi in ysib
+                                    if axi is not ax]
 
         labels = []
         if props.get('xlabel'):
@@ -186,6 +189,8 @@ class MPLD3Renderer(Renderer):
                       facecolors=[utils.color_to_hex(fc)
                                   for fc in styles['facecolor']],
                       edgewidths=styles['linewidth'],
+                      offsetcoordinates=offset_coordinates,
+                      pathcoordinates=path_coordinates,
                       zorder=styles['zorder'])
         def affine_convert(t):
             m = t.get_matrix()

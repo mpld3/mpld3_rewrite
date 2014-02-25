@@ -340,11 +340,11 @@ mpld3.Axes.prototype.yfigure = function(y){
 
 mpld3.Axes.prototype.draw = function(){
     for(var i=0; i<this.prop.sharex.length; i++){
-	this.sharex.push(mpld3.get_object_by_id(this.prop.sharex[i]));
+	this.sharex.push(mpld3.get_element(this.prop.sharex[i]));
     }
 
     for(var i=0; i<this.prop.sharey.length; i++){
-	this.sharey.push(mpld3.get_object_by_id(this.prop.sharey[i]));
+	this.sharey.push(mpld3.get_element(this.prop.sharey[i]));
     }
 
     this.zoom = d3.behavior.zoom();
@@ -361,8 +361,7 @@ mpld3.Axes.prototype.draw = function(){
               + this.position[1] + ')')
         .attr('width', this.width)
         .attr('height', this.height)
-        .attr('class', "baseaxes")
-	.style('cursor', 'move');
+        .attr('class', "baseaxes");
     
     this.axesbg = this.baseaxes.append("svg:rect")
         .attr("width", this.width)
@@ -392,14 +391,16 @@ mpld3.Axes.prototype.enable_zoom = function(){
     if(this.prop.zoomable){
 	this.zoom.on("zoom", this.zoomed.bind(this));
 	this.baseaxes.call(this.zoom);
+	this.baseaxes.style("cursor", 'move');
     }
-    this.baseaxes.style("cursor", 'move');
 };
 
 mpld3.Axes.prototype.disable_zoom = function(){
-    this.zoom.on("zoom", null);
-    this.baseaxes.on('.zoom', null)
-    this.baseaxes.style('cursor', null);
+    if(this.prop.zoomable){
+	this.zoom.on("zoom", null);
+	this.baseaxes.on('.zoom', null)
+	this.baseaxes.style('cursor', null);
+    }
 };
 
 mpld3.Axes.prototype.zoomed = function(propagate){
@@ -1069,9 +1070,9 @@ mpld3.generate_id = function(N, chars){
     return id;
 }
 
-mpld3.get_object_by_id = function(id, fig){
-    // TODO: should elements be stored in a map/hash table instead?
-    // It would make this more efficient.
+// TODO: should elements be stored in a map/hash table instead?
+// It would make this more efficient.
+mpld3.get_element = function(id, fig){
     var figs_to_search, ax, el;
     if(typeof(fig) === "undefined"){
 	figs_to_search = mpld3.figures;
