@@ -96,7 +96,6 @@ class MPLD3Renderer(Renderer):
         self.finished_figures.append((fig, self.figure_json))
 
     def open_axes(self, ax, props):
-        print props
         self.axes_json = dict(bbox=props['bounds'],
                               xlim=props['xlim'],
                               ylim=props['ylim'],
