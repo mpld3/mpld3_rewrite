@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from mpld3renderer import fig_to_d3
+from mpld3_rewrite import fig_to_d3
 
 
 def test1(filename):

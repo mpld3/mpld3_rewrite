@@ -12,3 +12,19 @@ matplotlib to this JSON format will be done via
 This is very similar to the approach taken by vega, but at a bit lower level.
 Because vega's objects are very high level, it becomes difficult to exactly
 duplicate the look of a matplotlib plot within a d3 browser viewer.
+
+
+Installation
+============
+This package is based on the [mplexporter](http://github.com/mpld3/mplexporter)
+framework for crawling and exporting matplotlib images. This is bundled with
+the source distribution via git submodule.
+
+To download this dependency and bundle it in mpld3, run
+
+    [~]$ make build
+
+To install the package, type 
+
+    [~]$ make install
+

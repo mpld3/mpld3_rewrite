@@ -37,3 +37,6 @@ nosetests.xml
 
 # emacs backup
 *~
+
+# submodules
+mpld3_rewrite/mplexporter

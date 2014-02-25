@@ -5,10 +5,9 @@ import itertools
 
 import numpy as np
 
-# mplexporter can be found at http://github.com/mpld3/mplexporter
-from mplexporter import utils
-from mplexporter.exporter import Exporter
-from mplexporter.renderers import Renderer
+from .mplexporter import utils
+from .mplexporter.exporter import Exporter
+from .mplexporter.renderers import Renderer
 
 
 class MPLD3Renderer(Renderer):
