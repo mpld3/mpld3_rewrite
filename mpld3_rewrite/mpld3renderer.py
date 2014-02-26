@@ -242,29 +242,3 @@ TEXT_VA_DICT = {'bottom': 'auto',
 TEXT_HA_DICT = {'left': 'start',
                 'center': 'middle',
                 'right': 'end'}
-
-
-HTML_TEMPLATE = jinja2.Template("""
-<script type="text/javascript" src="{{ d3_url }}"></script>
-<script type="text/javascript" src="{{ mpld3_url }}"></script>
-
-<div id="fig{{ figid }}"></div>
-<script type="text/javascript">
-  var spec{{ figid }} = {{ figure_json }};
-  var fig{{ figid }} = mpld3.draw_figure("fig{{ figid }}", spec{{ figid }});
-</script>
-""")
-
-def fig_to_d3(fig, d3_url=None, mpld3_url=None):
-    if d3_url is None:
-        d3_url = "http://d3js.org/d3.v3.min.js"
-    if mpld3_url is None:
-        mpld3_url = "js/mpld3.v1.js"
-    figid = str(int(random.random() * 1E11))
-    renderer = MPLD3Renderer()
-    Exporter(renderer).run(fig)
-    figure_json = json.dumps(renderer.finished_figures[0][1])
-    return HTML_TEMPLATE.render(figid=figid,
-                                d3_url=d3_url,
-                                mpld3_url=mpld3_url,
-                                figure_json=figure_json)
