@@ -93,6 +93,11 @@ class MPLD3Renderer(Renderer):
         for i, dataset in enumerate(self.datasets):
             datalabel = self.datalabel(i + 1)
             self.figure_json['data'][datalabel] = np.asarray(dataset).tolist()
+        if hasattr(fig, "plugins"):
+            self.figure_json["plugins"] = []
+            for plugin in fig.plugins:
+                if hasattr(plugin, "get_dict"):
+                    self.figure_json["plugins"].append(plugin.get_dict())
         self.finished_figures.append((fig, self.figure_json))
 
     def open_axes(self, ax, props):

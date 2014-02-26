@@ -17,6 +17,7 @@ mpld3.Figure = function(figid, prop){
     var required = ["width", "height"];
     var defaults = {data:{},
 		    axes:[],
+		    plugins:[],
 		    toolbar:["reset","move"],
 		    id: mpld3.generate_id(),
 		   };
@@ -31,7 +32,16 @@ mpld3.Figure = function(figid, prop){
     for(var i=0; i<prop.axes.length; i++){
 	this.axes.push(new mpld3.Axes(this, this.prop.axes[i]));
     }
-}
+    this.plugins = [];
+    for(var i=0; i<prop.plugins.length; i++){
+	this.add_plugin(this.prop.plugins[i]["type"], this.prop.plugins[i]);
+    }
+};
+
+mpld3.Figure.prototype.add_plugin = function(plug, props){
+    if(plug in mpld3.plugin_map) plug = mpld3.plugin_map[plug];
+    this.plugins.push(new plug(this, props));
+};
 
 mpld3.Figure.prototype.draw = function(){
     this.canvas = this.root.append('svg:svg')
@@ -41,6 +51,10 @@ mpld3.Figure.prototype.draw = function(){
 
     for (var i=0; i<this.axes.length; i++){
 	this.axes[i].draw();
+    }
+
+    for (var i=0; i<this.plugins.length; i++){
+	this.plugins[i].draw();
     }
 
     this.enable_zoom();
@@ -887,7 +901,7 @@ mpld3.PathCollection = function(ax, prop){
 		 figure:this.ax.xfigure.bind(this.ax)}
     this.ymap = {points:function(y){return y;},
 		 data:this.ax.y.bind(this.ax),
-		 figure:this.ax.yfigure.bind(this.ax)}    
+		 figure:this.ax.yfigure.bind(this.ax)}
 };
 
 mpld3.PathCollection.prototype.transform_func = function(d, i){
@@ -1029,11 +1043,11 @@ mpld3.Text.prototype.zoomed = function(){
 /* Image Object */
 mpld3.Image = function(ax, prop){
     this.ax = ax;
-    required = ["data", "extent"];
-    defaults = {alpha: 1.0,
-		coordinates: "data",
-		zorder: 1,
-		id: mpld3.generate_id()};
+    var required = ["data", "extent"];
+    var defaults = {alpha: 1.0,
+	 	    coordinates: "data",
+	 	    zorder: 1,
+		    id: mpld3.generate_id()};
     this.prop = mpld3.process_props(this, prop, defaults, required);
 };
 
@@ -1054,6 +1068,71 @@ mpld3.Image.prototype.zoomed = function(){
         .attr("width", this.ax.x(extent[1]) - this.ax.x(extent[0]))
         .attr("height", this.ax.y(extent[2]) - this.ax.y(extent[3]));
 };
+
+
+/* Plugins */
+mpld3.PointLabelPlugin = function(fig, prop){
+    this.fig = fig;
+    var required = ["id"];
+    var defaults = {labels:null, hoffset:0, voffset:10};
+    this.prop = mpld3.process_props(this, prop, defaults, required);
+}
+
+mpld3.PointLabelPlugin.prototype.draw = function(){
+    var obj = mpld3.get_element(this.prop.id, this.fig);
+    var labels = this.prop.labels;
+
+    this.tooltip = this.fig.canvas.append("text")
+        .attr("class", "mpld3-tooltip-text")
+	.attr("x", 0)
+	.attr("y", 0)
+	.text("")
+        .attr("style", "text-anchor: middle;")
+        .style("visibility", "hidden");
+
+    function mouseover(d, i){
+	var label = (labels === null)
+	    ? "(" + d[0] + ", " + d[1] + ")"
+	    : labels[i % labels.length];
+	    
+	this.tooltip
+	    .style("visibility", "visible")
+	    .text(label);
+    }
+
+    function mousemove(d, i){
+        // For some reason, this doesn't work in the notebook
+        // xy = d3.mouse(fig.canvas.node());
+        // use this instead
+        var ctm = this.fig.canvas.node().getScreenCTM();
+
+	// d3.event is inexplicably null sometimes... why?
+	// if it's null, we'll put the result in the bottom corner
+	if(d3.event === null){
+	    this.tooltip.attr("style", "text-anchor: end;")
+	    var x = obj.ax.position[0] + 0.98 * obj.ax.width;
+	    var y = obj.ax.position[1] + 0.98 * obj.ax.height;
+	}else{
+	    var x = d3.event.x - ctm.e - this.prop.hoffset;
+	    var y = d3.event.y - ctm.f - this.prop.voffset;
+	}
+
+        this.tooltip
+            .attr('x', x)
+            .attr('y', y);
+    }
+
+    function mouseout(d, i){
+	this.tooltip.style("visibility", "hidden");
+    }
+    
+    obj.group.selectAll("path")
+	.on("mouseover", mouseover.bind(this))
+        .on("mousemove", mousemove.bind(this))
+        .on("mouseout", mouseout.bind(this));
+}
+
+mpld3.plugin_map = {"pointlabel": mpld3.PointLabelPlugin};
 
 /**********************************************************************/
 /* Data Parsing Functions */
