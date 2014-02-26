@@ -225,24 +225,14 @@ mpld3.Axes = function(fig, prop){
                      (1 - bbox[1] - bbox[3]) * this.fig.height];
     this.width = bbox[2] * this.fig.width;
     this.height = bbox[3] * this.fig.height;
+
+    function buildDate(d){return new Date(d[0],d[1],d[2],d[3],d[4],d[5]);}
     
     if(this.prop.xscale === 'log'){
 	this.xdom = d3.scale.log();
     }else if(this.prop.xscale === 'date'){
-	this.prop.xdomain = [new Date(this.prop.xdomain[0][0],
-				      this.prop.xdomain[0][1],
-				      this.prop.xdomain[0][2],
-				      this.prop.xdomain[0][3],
-				      this.prop.xdomain[0][4],
-				      this.prop.xdomain[0][5],
-				      this.prop.xdomain[0][6]),
-			     new Date(this.prop.xdomain[1][0],
-				      this.prop.xdomain[1][1],
-				      this.prop.xdomain[1][2],
-				      this.prop.xdomain[1][3],
-				      this.prop.xdomain[1][4],
-				      this.prop.xdomain[1][5],
-				      this.prop.xdomain[1][6])];
+	this.prop.xdomain = [buildDate(this.prop.xdomain[0]),
+			     buildDate(this.prop.xdomain[1])];
 	this.xdom = d3.time.scale();
     }else{
 	this.xdom = d3.scale.linear();
@@ -251,20 +241,8 @@ mpld3.Axes = function(fig, prop){
     if(this.prop.yscale === 'log'){
 	this.ydom = d3.scale.log();
     }else if(this.prop.yscale === 'date'){
-	this.prop.ydomain = [new Date(this.prop.ydomain[0][0],
-				      this.prop.ydomain[0][1],
-				      this.prop.ydomain[0][2],
-				      this.prop.ydomain[0][3],
-				      this.prop.ydomain[0][4],
-				      this.prop.ydomain[0][5],
-				      this.prop.ydomain[0][6]),
-			     new Date(this.prop.ydomain[1][0],
-				      this.prop.ydomain[1][1],
-				      this.prop.ydomain[1][2],
-				      this.prop.ydomain[1][3],
-				      this.prop.ydomain[1][4],
-				      this.prop.ydomain[1][5],
-				      this.prop.ydomain[1][6])];
+	this.prop.ydomain = [buildDate(this.prop.ydomain[0]),
+			     buildDate(this.prop.ydomain[1])];
 	this.ydom = d3.time.scale();
     }else{
 	this.ydom = d3.scale.linear();
@@ -1042,7 +1020,7 @@ mpld3.Text.prototype.zoomed = function(){
             .attr("y", pos_y);
 
 	if(this.prop.rotation){
-	    this.obj.attr("transform", "rotate(" + this.rotation + ","
+	    this.obj.attr("transform", "rotate(" + this.prop.rotation + ","
 			  + pos_x + "," + pos_y + ")");
 	}
     }
