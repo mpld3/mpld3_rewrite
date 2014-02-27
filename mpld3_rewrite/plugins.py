@@ -50,8 +50,11 @@ class PluginBase(object):
         else:
             raise NotImplementedError()
 
-    def html(self):
-        raise NotImplementedError()
+    def javascript(self):
+        return ""
+
+    def css(self):
+        return ""
 
 
 class PointLabelTooltip(PluginBase):
@@ -128,3 +131,97 @@ class LineLabelTooltip(PluginBase):
                       "hoffset": hoffset,
                       "voffset": voffset,
                       "location": location}
+
+
+class PointHTMLTooltip(PluginBase):
+    """A Plugin to enable an HTML tooltip:
+    formated text which hovers over points.
+
+    Parameters
+    ----------
+    points : matplotlib Collection or Line2D object
+        The figure element to apply the tooltip to
+    labels : list
+        The labels for each point in points, as strings of unescaped HTML.
+    hoffset, voffset : integer, optional
+        The number of pixels to offset the tooltip text.  Default is
+        hoffset = 0, voffset = 10
+    css : str, optional
+        css to be included, for styling the label html if desired
+    Examples
+    --------
+    >>> import matplotlib.pyplot as plt
+    >>> from mpld3 import fig_to_d3, plugins
+    >>> fig, ax = plt.subplots()
+    >>> points = ax.plot(range(10), 'o')
+    >>> labels = ['<h1>{title}</h1>'.format(title=i) for i in range(10)]
+    >>> plugins.connect(fig, PointHTMLTooltip(points[0], labels))
+    >>> fig_to_d3(fig)
+    """
+    import jinja2
+
+    JAVASCRIPT = """
+    HtmlTooltipPlugin = function(fig, prop){
+       this.fig = fig;
+       var required = ["id"];
+       var defaults = {labels:null, hoffset:0, voffset:10};
+       this.prop = mpld3.process_props(this, prop, defaults, required);
+    }
+
+    HtmlTooltipPlugin.prototype.draw = function(){
+       var obj = mpld3.get_element(this.prop.id);
+       var labels = this.prop.labels;
+       var tooltip = d3.select("body").append("div")
+                    .attr("class", "mpld3-tooltip")
+                    .style("position", "absolute")
+                    .style("z-index", "10")
+                    .style("visibility", "hidden");
+
+       obj.elements()
+           .on("mouseover", function(d, i){
+                              tooltip.html(labels[i])
+                                     .style("visibility", "visible");})
+           .on("mousemove", function(d, i){
+                    tooltip
+                      .style("top", d3.event.pageY + this.prop.voffset + "px")
+                      .style("left",d3.event.pageX + this.prop.hoffset + "px");
+                 }.bind(this))
+           .on("mouseout",  function(d, i){
+                           tooltip.style("visibility", "hidden");});
+    }
+
+    mpld3.plugin_map["htmltooltip"] = HtmlTooltipPlugin;
+    //mpld3.register_plugin("htmltooltip", HtmlTooltipPlugin);
+    """
+
+    HTML = """
+    <style>
+    {css}
+    </style>
+    <script>
+    {javascript}
+    </script>
+    """
+
+    def __init__(self, points, labels=None,
+                 hoffset=0, voffset=10, css=None):
+        self.points = points
+        self.labels = labels
+        self.voffset = voffset
+        self.hoffset = hoffset
+        self._css = css
+        if isinstance(points, matplotlib.lines.Line2D):
+            suffix = "pts"
+        else:
+            suffix = None
+        self.dict_ = {"type": "htmltooltip",
+                      "id": get_id(points, suffix),
+                      "labels": labels,
+                      "hoffset": hoffset,
+                      "voffset": voffset}
+        
+    def javascript(self):
+        return self.JAVASCRIPT
+
+    def css(self):
+        return self._css

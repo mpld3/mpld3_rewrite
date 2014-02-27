@@ -15,15 +15,20 @@ HTML_TEMPLATE ="""
 <script type="text/javascript" src="{d3_url}"></script>
 <script type="text/javascript" src="{mpld3_url}"></script>
 
+<style>
+{extra_css}
+</style>
+
 <div id="fig{figid}"></div>
 <script type="text/javascript">
+  {extra_js}
   var spec{figid} = {figure_json};
   var fig{figid} = mpld3.draw_figure("fig{figid}", spec{figid});
 </script>
 """
 
 
-def fig_to_d3(fig, d3_url=None, mpld3_url=None, **kwargs):
+def fig_to_d3(fig, d3_url=None, mpld3_url=None, safemode=False, **kwargs):
     """Output d3 representation of the figure
 
     Parameters
@@ -36,6 +41,8 @@ def fig_to_d3(fig, d3_url=None, mpld3_url=None, **kwargs):
     mpld3_url : string (optional)
         The URL of the mpld3 library.  If not specified, a standard web path
         will be used.
+    safemode : boolean
+        If true, scrub any additional html
     **kwargs :
         Additional keyword arguments passed to mplexporter.Exporter
 
@@ -58,11 +65,20 @@ def fig_to_d3(fig, d3_url=None, mpld3_url=None, **kwargs):
     renderer = MPLD3Renderer()
     Exporter(renderer, **kwargs).run(fig)
     figure_json = json.dumps(renderer.finished_figures[0][1])
+
+    if safemode:
+        extra_css = ""
+        extra_js = ""
+    else:
+        extra_css = renderer.finished_figures[0][2]
+        extra_js = renderer.finished_figures[0][3]
+
     return HTML_TEMPLATE.format(figid=figid,
                                 d3_url=d3_url,
                                 mpld3_url=mpld3_url,
-                                figure_json=figure_json)
-
+                                figure_json=figure_json,
+                                extra_css=extra_css,
+                                extra_js=extra_js)
 
 def display_d3(fig=None, closefig=True, d3_url=None, mpld3_url=None):
     """Display figure in IPython notebook via the HTML display hook

@@ -96,11 +96,17 @@ class MPLD3Renderer(Renderer):
             datalabel = self.datalabel(i + 1)
             self.figure_json['data'][datalabel] = np.asarray(dataset).tolist()
         if hasattr(fig, "plugins"):
+            additional_css = []
+            additional_js = []
             self.figure_json["plugins"] = []
             for plugin in fig.plugins:
                 if hasattr(plugin, "get_dict"):
                     self.figure_json["plugins"].append(plugin.get_dict())
-        self.finished_figures.append((fig, self.figure_json))
+                    additional_css.append(plugin.css())
+                    additional_js.append(plugin.javascript())
+        self.finished_figures.append((fig, self.figure_json,
+                                      "".join(additional_css),
+                                      "".join(additional_js)))
 
     def open_axes(self, ax, props):
         self.axes_json = dict(bbox=props['bounds'],
@@ -158,7 +164,8 @@ class MPLD3Renderer(Renderer):
         self.axes_json = None
 
     # If draw_line() is not implemented, it will be delegated to draw_path
-    def _draw_line(self, data, coordinates, style, mplobj=None):
+    # Should we get rid of this? There's not really any advantage here
+    def draw_line(self, data, coordinates, style, mplobj=None):
         line = self.add_data(data)
         line['coordinates'] = coordinates
         line['id'] = get_id(mplobj)

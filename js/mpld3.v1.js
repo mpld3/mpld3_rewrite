@@ -4,9 +4,13 @@
 
 var mpld3 = {
     version: "0.1",
-    figures: []
+    figures: [],
+    plugin_map: {},
 };
 
+mpld3.register_plugin = function(name, obj){
+    mpld3.plugin_map[name] = obj;
+}
 
 /* Figure object: */
 mpld3.Figure = function(figid, prop){
@@ -1173,7 +1177,7 @@ mpld3.TooltipPlugin.prototype.draw = function(){
         .on("mouseout", mouseout.bind(this));
 }
 
-mpld3.plugin_map = {"tooltip": mpld3.TooltipPlugin};
+mpld3.register_plugin("tooltip", mpld3.TooltipPlugin);
 
 /**********************************************************************/
 /* Data Parsing Functions */
