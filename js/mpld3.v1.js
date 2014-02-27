@@ -141,46 +141,33 @@
     mpld3.Toolbar.prototype.draw = function(){
 	this.toolbar = this.fig.root.append("div")
 	    .attr("class", "mpld3-toolbar");
+
+	mpld3.insert_css("div#"+this.fig.figid +
+			 " .mpld3-toolbar button",
+			 {border: "2px outset",
+			  width: "38px",
+			  height: "38px",
+			  cursor: "hand",
+			  background: "#ffffff no-repeat 1px 1px"});
+	mpld3.insert_css("div#"+this.fig.figid +
+			 " .mpld3-toolbar button.pressed",
+			 {border: "2px inset",
+			  cursor: "hand",
+			  background: "eeeeee no-repeat 2px 2px"});
+
 	for(var i=0; i<this.prop.length; i++){
 	    switch(this.prop[i])
 	    {
 	    case "reset":
-		this.toolbar
-		    .append("button")
+		this.toolbar.append("button")
 		    .attr("class", "mpld3-resetbutton")
-		    .style("background",
-			   "#ffffff url(icons/home.png) no-repeat 1px 1px")
-	            .style("border", "2px outset")
-		    .style("width", "38px")
-		    .style("height", "36px")
-	            .style("cursor", "hand")
-	            .on("mousedown",
-			function(){d3.select(this)
-				   .style("border", "2px inset")
-				   .style("background",
-					  "#eeeeee url(icons/home.png) no-repeat 2px 2px");})
-	            .on("mouseup",
-			function(){d3.select(this)
-                                   .style("border", "2px outset")
-				   .style("background",
-					  "#ffffff url(icons/home.png) no-repeat 1px 1px");})
+		    .style("background-image", "url(icons/home.png)")
 		    .on("click", this.fig.reset.bind(this.fig));
 		break;
 	    case "move":
-		this.toolbar
-		    .append("button")
+		this.toolbar.append("button")
 		    .attr("class", "mpld3-movebutton")
-		    .style("background",
-			   "#ffffff url(icons/move.png) no-repeat 1px 1px")
-	            .style("border", "2px outset")
-		    .style("width", "38px")
-		    .style("height", "36px")
-	            .style("cursor", "hand")
-	            .on("mousedown",
-			function(){d3.select(this)
-				   .style("border", "2px inset")
-				   .style("background",
-					  "#eeeeee url(icons/move.png) no-repeat 2px 2px");})
+		    .style("background-image", "url(icons/move.png)")
 		    .on("click", this.toggle_zoom.bind(this));
 		this.fig.disable_zoom();
 		break;
@@ -193,16 +180,18 @@
 		.style("height", "auto")
 		.style("display", "inline-block");
 	}
+	console.log(this.toolbar.selectAll("button").size());
+	this.toolbar.selectAll("button")
+	    .on("mouseup", function(){d3.select(this)
+				      .classed({pressed:false})})
+	    .on("mousedown", function(){d3.select(this)
+					.classed({pressed:true})});
     };
-    
+
     mpld3.Toolbar.prototype.toggle_zoom = function(){
 	this.fig.toggle_zoom();
-	if(!(this.fig.zoom_on)){
-	    this.toolbar.selectAll(".mpld3-movebutton")
-	        .style("border", "2px outset")
-		.style("background",
-		       "#ffffff url(icons/move.png) no-repeat 1px 1px");
-	}
+	this.toolbar.selectAll(".mpld3-movebutton")
+	    .classed({pressed: this.fig.zoom_on});
     };
     
     
@@ -662,7 +651,7 @@
 			  "stroke-dasharray": this.prop.dasharray,
 			  "stroke-opacity": this.prop.alpha});
 	mpld3.insert_css("div#" + this.axes.fig.figid +
-			 " ." + this.cssclass + " path", +
+			 " ." + this.cssclass + " path",
 			 {"stroke-width": 0});
     };
     
