@@ -706,6 +706,10 @@ mpld3.Line.prototype.draw = function(){
 	.style("fill", "none");
 }
 
+mpld3.Line.prototype.elements = function(d){
+    return this.line;
+};
+
 mpld3.Line.prototype.zoomed = function(){
     // TODO: check coordinates (data vs figure)
     if(this.prop.coordinates === "data"){
@@ -771,7 +775,11 @@ mpld3.Path.prototype.draw = function(){
 		          (this.prop.offset[1])];    
 	this.path.attr("transform", "translate(" + offset + ")");
     }
-}
+};
+
+mpld3.Path.prototype.elements = function(d){
+    return this.path;
+};
 
 mpld3.Path.prototype.zoomed = function(){
     if(this.prop.coordinates === "data"){
@@ -782,7 +790,7 @@ mpld3.Path.prototype.zoomed = function(){
 		      this.ax.y(this.prop.offset[1])];
 	this.path.attr("transform", "translate(" + offset + ")");
     }
-}
+};
 
 
 /* Markers Element */
@@ -848,11 +856,15 @@ mpld3.Markers.prototype.draw = function(){
           .attr("vector-effect", "non-scaling-stroke");
 };
 
+mpld3.Markers.prototype.elements = function(d){
+    return this.group.selectAll("path");
+};
+
 mpld3.Markers.prototype.zoomed = function(){
     if(this.prop.coordinates === "data"){
 	this.pointsobj.attr("transform", this.translate.bind(this));
     }
-}
+};
 
 /* Path Collection Element */
 mpld3.PathCollection = function(ax, prop){
@@ -968,6 +980,10 @@ mpld3.PathCollection.prototype.draw = function(){
                       .attr("transform", this.transform_func.bind(this));
 };
 
+mpld3.PathCollection.prototype.elements = function(d){
+    return this.group.selectAll("path");
+};
+
 mpld3.PathCollection.prototype.zoomed = function(){
     if(this.prop.pathcoordinates === "data"){
 	this.pathsobj.attr("d", this.path_func.bind(this));
@@ -1025,6 +1041,10 @@ mpld3.Text.prototype.draw = function(){
 	.style("opacity", this.prop.alpha);
 };
 
+mpld3.Text.prototype.elements = function(d){
+    return d3.select(this.obj);
+};
+
 mpld3.Text.prototype.zoomed = function(){
     if(this.prop.coordinates == "data"){
 	pos_x = this.ax.x(this.position[0]);
@@ -1060,6 +1080,10 @@ mpld3.Image.prototype.draw = function(){
     this.zoomed();
 };
 
+mpld3.Image.prototype.elements = function(d){
+    return d3.select(this.image);
+};
+
 mpld3.Image.prototype.zoomed = function(){
     var extent = this.prop.extent;
     this.image
@@ -1071,14 +1095,14 @@ mpld3.Image.prototype.zoomed = function(){
 
 
 /* Plugins */
-mpld3.PointLabelPlugin = function(fig, prop){
+mpld3.TooltipPlugin = function(fig, prop){
     this.fig = fig;
     var required = ["id"];
     var defaults = {labels:null, hoffset:0, voffset:10, location:'mouse'};
     this.prop = mpld3.process_props(this, prop, defaults, required);
 }
 
-mpld3.PointLabelPlugin.prototype.draw = function(){
+mpld3.TooltipPlugin.prototype.draw = function(){
     var obj = mpld3.get_element(this.prop.id, this.fig);
     var labels = this.prop.labels;
     var loc = this.prop.location;
@@ -1143,13 +1167,13 @@ mpld3.PointLabelPlugin.prototype.draw = function(){
 	this.tooltip.style("visibility", "hidden");
     }
     
-    obj.group.selectAll("path")
+    obj.elements()
 	.on("mouseover", mouseover.bind(this))
         .on("mousemove", mousemove.bind(this))
         .on("mouseout", mouseout.bind(this));
 }
 
-mpld3.plugin_map = {"pointlabel": mpld3.PointLabelPlugin};
+mpld3.plugin_map = {"tooltip": mpld3.TooltipPlugin};
 
 /**********************************************************************/
 /* Data Parsing Functions */

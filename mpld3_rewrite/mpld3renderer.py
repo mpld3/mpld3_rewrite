@@ -158,7 +158,7 @@ class MPLD3Renderer(Renderer):
         self.axes_json = None
 
     # If draw_line() is not implemented, it will be delegated to draw_path
-    def draw_line(self, data, coordinates, style, mplobj=None):
+    def _draw_line(self, data, coordinates, style, mplobj=None):
         line = self.add_data(data)
         line['coordinates'] = coordinates
         line['id'] = get_id(mplobj)
