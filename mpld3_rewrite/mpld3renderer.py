@@ -9,6 +9,8 @@ from .mplexporter import utils
 from .mplexporter.exporter import Exporter
 from .mplexporter.renderers import Renderer
 
+from .utils import get_id
+
 
 class MPLD3Renderer(Renderer):
     def __init__(self):
@@ -87,7 +89,7 @@ class MPLD3Renderer(Renderer):
                                 height=props['figheight'] * props['dpi'],
                                 axes=[],
                                 data={},
-                                id=str(id(fig)))
+                                id=get_id(fig))
 
     def close_figure(self, fig):
         for i, dataset in enumerate(self.datasets):
@@ -116,7 +118,7 @@ class MPLD3Renderer(Renderer):
                               axesbg=props['axesbg'],
                               axesbgalpha=props['axesbgalpha'],
                               zoomable=bool(props['dynamic']),
-                              id=str(id(ax)),
+                              id=get_id(ax),
                               lines=[],
                               paths=[],
                               markers=[],
@@ -128,9 +130,9 @@ class MPLD3Renderer(Renderer):
         # Get shared axes info
         xsib = ax.get_shared_x_axes().get_siblings(ax)
         ysib = ax.get_shared_y_axes().get_siblings(ax)
-        self.axes_json['sharex'] = [str(id(axi)) for axi in xsib
+        self.axes_json['sharex'] = [get_id(axi) for axi in xsib
                                     if axi is not ax]
-        self.axes_json['sharey'] = [str(id(axi)) for axi in ysib
+        self.axes_json['sharey'] = [get_id(axi) for axi in ysib
                                     if axi is not ax]
 
         labels = []
@@ -159,7 +161,7 @@ class MPLD3Renderer(Renderer):
     def draw_line(self, data, coordinates, style, mplobj=None):
         line = self.add_data(data)
         line['coordinates'] = coordinates
-        line['id'] = str(id(mplobj))
+        line['id'] = get_id(mplobj)
         for key in ['color', 'linewidth', 'dasharray', 'alpha', 'zorder']:
             line[key] = style[key]
         self.axes_json['lines'].append(line)
@@ -169,7 +171,7 @@ class MPLD3Renderer(Renderer):
         path = self.add_data(data)
         path['coordinates'] = coordinates
         path['pathcodes'] = pathcodes
-        path['id'] = str(id(mplobj))
+        path['id'] = get_id(mplobj)
         if offset is not None:
             path['offset'] = list(offset)
             path['offsetcoordinates'] = offset_coordinates
@@ -183,7 +185,7 @@ class MPLD3Renderer(Renderer):
     def draw_markers(self, data, coordinates, style, mplobj=None):
         markers = self.add_data(data)
         markers["coordinates"] = coordinates
-        markers['id'] = str(id(mplobj))
+        markers['id'] = get_id(mplobj, 'pts')
         for key in ['facecolor', 'edgecolor', 'edgewidth',
                     'alpha', 'zorder']:
             markers[key] = style[key]
@@ -215,7 +217,7 @@ class MPLD3Renderer(Renderer):
         pathsdict['pathtransforms'] = [affine_convert(t)
                                    for t in path_transforms]
         pathsdict.update(styles)
-        pathsdict['id'] = str(id(mplobj))
+        pathsdict['id'] = get_id(mplobj)
         self.axes_json['collections'].append(pathsdict)
 
 
@@ -230,13 +232,13 @@ class MPLD3Renderer(Renderer):
                     color=style['color'],
                     alpha=style['alpha'],
                     zorder=style['zorder'],
-                    id=str(id(mplobj)))
+                    id=get_id(mplobj))
         self.axes_json['texts'].append(text)
 
     def draw_image(self, imdata, extent, coordinates, style, mplobj=None):
         image = dict(data=imdata, extent=extent, coordinates=coordinates)
         image.update(style)
-        image['id'] = str(id(mplobj))
+        image['id'] = get_id(mplobj)
         self.axes_json['images'].append(image)
         
 

@@ -10,9 +10,11 @@ to create nearly any imaginable behavior by defining your own custom plugin.
 __all__ = ['connect', 'PluginBase', 'PointLabelTooltip', 'PointHTMLTooltip',
            'LineLabelTooltip', 'ResetButton']
 
-import jinja2
 import json
 import uuid
+import matplotlib
+
+from .utils import get_id
 
 
 def connect(fig, *plugins):
@@ -80,8 +82,12 @@ class PointLabelTooltip(PluginBase):
         if location not in ["bottom left", "top left", "bottom right",
                             "top right", "mouse"]:
             raise ValueError("invalid location: {0}".format(location))
+        if isinstance(points, matplotlib.lines.Line2D):
+            suffix = "pts"
+        else:
+            suffix = None
         self.dict_ = {"type": "pointlabel",
-                      "id": str(id(points)),
+                      "id": get_id(points, suffix),
                       "labels": labels,
                       "hoffset": hoffset,
                       "voffset": voffset,

@@ -1101,9 +1101,9 @@ mpld3.PointLabelPlugin.prototype.draw = function(){
     }
 
     if(loc == "bottom left" || loc == "bottom right"){
-	this.y = obj.ax.position[1] + 5 + this.prop.voffset;
-    }else if(loc == "top left" || loc == "top right"){
 	this.y = obj.ax.position[1] + obj.ax.height - 5 + this.prop.voffset;
+    }else if(loc == "top left" || loc == "top right"){
+	this.y = obj.ax.position[1] + 5 + this.prop.voffset;
     }
 
     function mouseover(d, i){	    
