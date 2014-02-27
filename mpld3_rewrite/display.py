@@ -11,7 +11,7 @@ D3_URL = "http://d3js.org/d3.v3.min.js"
 MPLD3_URL = "js/mpld3.v1.js"
 
 
-HTML_TEMPLATE ="""
+HTML_TEMPLATE = """
 <script type="text/javascript" src="{d3_url}"></script>
 <script type="text/javascript" src="{mpld3_url}"></script>
 
@@ -79,6 +79,7 @@ def fig_to_d3(fig, d3_url=None, mpld3_url=None, safemode=False, **kwargs):
                                 figure_json=figure_json,
                                 extra_css=extra_css,
                                 extra_js=extra_js)
+
 
 def display_d3(fig=None, closefig=True, d3_url=None, mpld3_url=None):
     """Display figure in IPython notebook via the HTML display hook

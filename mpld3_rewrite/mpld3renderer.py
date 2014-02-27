@@ -53,7 +53,7 @@ class MPLD3Renderer(Renderer):
             matches = np.array([np.all(col == d.T, axis=1) for col in data.T])
             if not np.any(matches):
                 continue
-            
+
             # If we get here, we've found a dataset with a matching column
             # we'll update this data with additional columns if necessary
             new_data = list(self.datasets[i].T)
@@ -80,7 +80,7 @@ class MPLD3Renderer(Renderer):
             yindex = 1
 
         self.datalabels.append(datalabel)
-        return {key:datalabel, "xindex":xindex, "yindex":yindex}
+        return {key: datalabel, "xindex": xindex, "yindex": yindex}
 
     def open_figure(self, fig, props):
         self.datasets = []
@@ -92,12 +92,12 @@ class MPLD3Renderer(Renderer):
                                 id=get_id(fig))
 
     def close_figure(self, fig):
+        additional_css = []
+        additional_js = []
         for i, dataset in enumerate(self.datasets):
             datalabel = self.datalabel(i + 1)
             self.figure_json['data'][datalabel] = np.asarray(dataset).tolist()
         if hasattr(fig, "plugins"):
-            additional_css = []
-            additional_js = []
             self.figure_json["plugins"] = []
             for plugin in fig.plugins:
                 if hasattr(plugin, "get_dict"):
@@ -159,7 +159,6 @@ class MPLD3Renderer(Renderer):
                 style = utils.get_text_style(text)
                 self.draw_text(content, position, code, style)
 
-
     def close_axes(self, ax):
         self.axes_json = None
 
@@ -215,6 +214,7 @@ class MPLD3Renderer(Renderer):
                       offsetcoordinates=offset_coordinates,
                       pathcoordinates=path_coordinates,
                       zorder=styles['zorder'])
+
         def affine_convert(t):
             m = t.get_matrix()
             return m[0, :2].tolist() + m[1, :2].tolist() + m[2, :2].tolist()
@@ -222,11 +222,10 @@ class MPLD3Renderer(Renderer):
         pathsdict = self.add_data(offsets, "offsets")
         pathsdict['paths'] = [(v.tolist(), p) for (v, p) in paths]
         pathsdict['pathtransforms'] = [affine_convert(t)
-                                   for t in path_transforms]
+                                       for t in path_transforms]
         pathsdict.update(styles)
         pathsdict['id'] = get_id(mplobj)
         self.axes_json['collections'].append(pathsdict)
-
 
     def draw_text(self, text, position, coordinates, style, mplobj=None):
         text = dict(text=text,
@@ -247,7 +246,7 @@ class MPLD3Renderer(Renderer):
         image.update(style)
         image['id'] = get_id(mplobj)
         self.axes_json['images'].append(image)
-        
+
 
 TEXT_VA_DICT = {'bottom': 'auto',
                 'baseline': 'auto',

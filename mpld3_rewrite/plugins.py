@@ -158,7 +158,6 @@ class PointHTMLTooltip(PluginBase):
     >>> plugins.connect(fig, PointHTMLTooltip(points[0], labels))
     >>> fig_to_d3(fig)
     """
-    import jinja2
 
     JAVASCRIPT = """
     HtmlTooltipPlugin = function(fig, prop){
@@ -166,7 +165,7 @@ class PointHTMLTooltip(PluginBase):
        var required = ["id"];
        var defaults = {labels:null, hoffset:0, voffset:10};
        this.prop = mpld3.process_props(this, prop, defaults, required);
-    }
+    };
 
     HtmlTooltipPlugin.prototype.draw = function(){
        var obj = mpld3.get_element(this.prop.id);
@@ -188,19 +187,9 @@ class PointHTMLTooltip(PluginBase):
                  }.bind(this))
            .on("mouseout",  function(d, i){
                            tooltip.style("visibility", "hidden");});
-    }
+    };
 
-    mpld3.plugin_map["htmltooltip"] = HtmlTooltipPlugin;
-    //mpld3.register_plugin("htmltooltip", HtmlTooltipPlugin);
-    """
-
-    HTML = """
-    <style>
-    {css}
-    </style>
-    <script>
-    {javascript}
-    </script>
+    mpld3.register_plugin("htmltooltip", HtmlTooltipPlugin);
     """
 
     def __init__(self, points, labels=None,
@@ -209,7 +198,7 @@ class PointHTMLTooltip(PluginBase):
         self.labels = labels
         self.voffset = voffset
         self.hoffset = hoffset
-        self._css = css
+        self._css = css or ""
         if isinstance(points, matplotlib.lines.Line2D):
             suffix = "pts"
         else:
@@ -219,7 +208,7 @@ class PointHTMLTooltip(PluginBase):
                       "labels": labels,
                       "hoffset": hoffset,
                       "voffset": voffset}
-        
+
     def javascript(self):
         return self.JAVASCRIPT
 
