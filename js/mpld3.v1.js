@@ -30,7 +30,7 @@
 	var defaults = {data:{},
 			axes:[],
 			plugins:[],
-			toolbar:["reset","move"],
+			toolbar:["reset", "move"],
 			id: mpld3.generate_id(),
 		       };
 	this.prop = mpld3.process_props(this, prop, defaults, required);
@@ -139,6 +139,20 @@
 	this.fig = fig;
 	this.prop = prop;
     };
+
+    mpld3.Toolbar.prototype.add_button = function(cls, bg, click){
+	this.toolbar.append("div")
+	    .attr("class", "mpld3-divider")
+	    .style("width", "5px")
+	    .style("height", "auto")
+	    .style("display", "inline-block");
+
+	return this.toolbar.append("button")
+	    .attr("class", cls)
+	    .style("display", "inline-block")
+	    .style("background-image", "url(" + mpld3.icon_dir + bg + ")")
+	    .on("click", click);
+    }
     
     mpld3.Toolbar.prototype.draw = function(){
 	this.toolbar = this.fig.root.append("div")
@@ -154,47 +168,33 @@
 	mpld3.insert_css("div#"+this.fig.figid +
 			 " .mpld3-toolbar button.pressed",
 			 {border: "2px inset",
-			  cursor: "hand",
 			  background: "eeeeee no-repeat 2px 2px"});
 
 	for(var i=0; i<this.prop.length; i++){
 	    switch(this.prop[i])
 	    {
 	    case "reset":
-		this.toolbar.append("button")
-		    .attr("class", "mpld3-resetbutton")
-		    .style("background-image",
-			   "url(" + mpld3.icon_dir + "home.png)")
-		    .on("click", this.fig.reset.bind(this.fig));
+		this.add_button("mpld3-resetbutton", "home.png",
+				 this.fig.reset.bind(this.fig));
 		break;
 	    case "move":
-		this.toolbar.append("button")
-		    .attr("class", "mpld3-movebutton")
-		    .style("background-image",
-               		   "url(" + mpld3.icon_dir + "move.png)")
-		    .on("click", this.toggle_zoom.bind(this));
+		this.add_button("mpld3-movebutton", "move.png",
+				function(){
+				    this.fig.toggle_zoom();
+				    this.toolbar.selectAll(".mpld3-movebutton")
+					.classed({pressed: this.fig.zoom_on});
+				}.bind(this));
 		this.fig.disable_zoom();
 		break;
 	    default:
 		throw "toolbar '" + this.prop[i] + "' not recognized";
 	    }
-	    this.toolbar.append("div")
-		.attr("class", "mpld3-divider")
-		.style("width", "5px")
-		.style("height", "auto")
-		.style("display", "inline-block");
 	}
 	this.toolbar.selectAll("button")
 	    .on("mouseup", function(){d3.select(this)
 				      .classed({pressed:false})})
 	    .on("mousedown", function(){d3.select(this)
 					.classed({pressed:true})});
-    };
-
-    mpld3.Toolbar.prototype.toggle_zoom = function(){
-	this.fig.toggle_zoom();
-	this.toolbar.selectAll(".mpld3-movebutton")
-	    .classed({pressed: this.fig.zoom_on});
     };
     
     
