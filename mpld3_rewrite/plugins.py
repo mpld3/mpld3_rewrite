@@ -51,10 +51,16 @@ class PluginBase(object):
             raise NotImplementedError()
 
     def javascript(self):
-        return ""
+        if hasattr(self, "JAVASCRIPT"):
+            return self.JAVASCRIPT
+        else:
+            return ""
 
     def css(self):
-        return ""
+        if hasattr(self, "css_"):
+            return self.css_
+        else:
+            return ""
 
 
 class PointLabelTooltip(PluginBase):
@@ -160,7 +166,7 @@ class PointHTMLTooltip(PluginBase):
     """
 
     JAVASCRIPT = """
-    HtmlTooltipPlugin = function(fig, prop){
+    var HtmlTooltipPlugin = function(fig, prop){
        this.fig = fig;
        var required = ["id"];
        var defaults = {labels:null, hoffset:0, voffset:10};
@@ -198,7 +204,7 @@ class PointHTMLTooltip(PluginBase):
         self.labels = labels
         self.voffset = voffset
         self.hoffset = hoffset
-        self._css = css or ""
+        self.css_ = css or ""
         if isinstance(points, matplotlib.lines.Line2D):
             suffix = "pts"
         else:
@@ -208,9 +214,3 @@ class PointHTMLTooltip(PluginBase):
                       "labels": labels,
                       "hoffset": hoffset,
                       "voffset": voffset}
-
-    def javascript(self):
-        return self.JAVASCRIPT
-
-    def css(self):
-        return self._css

@@ -180,7 +180,6 @@
 		.style("height", "auto")
 		.style("display", "inline-block");
 	}
-	console.log(this.toolbar.selectAll("button").size());
 	this.toolbar.selectAll("button")
 	    .on("mouseup", function(){d3.select(this)
 				      .classed({pressed:false})})
@@ -688,23 +687,23 @@
     };
     
     mpld3.Line.prototype.draw = function(){
-	this.linefunc = d3.svg.line()
+	this.datafunc = d3.svg.line()
             .interpolate("linear")
             .defined(this.filter.bind(this));
 	
 	if(this.prop.coordinates === "data"){
-	    this.linefunc
+	    this.datafunc
 		.x(function(d) {return this.ax.x(d[this.prop.xindex]);})
 		.y(function(d) {return this.ax.y(d[this.prop.yindex]);});
 	}else{
-	    this.linefunc
+	    this.datafunc
 		.x(function(d) {return this.ax.xfigure(d[this.prop.xindex]);})
 		.y(function(d) {return this.ax.yfigure(d[this.prop.yindex]);});
 	}
 	
 	this.line = this.ax.axes.append("svg:path")
 	    .data(this.data)
-            .attr("d", this.linefunc(this.data))
+            .attr("d", this.datafunc(this.data))
             .attr('class', 'mpld3-line')
 	    .style("stroke", this.prop.color)
 	    .style("stroke-width", this.prop.linewidth)
@@ -720,7 +719,7 @@
     mpld3.Line.prototype.zoomed = function(){
 	// TODO: check coordinates (data vs figure)
 	if(this.prop.coordinates === "data"){
-	    this.line.attr("d", this.linefunc(this.data));
+	    this.line.attr("d", this.datafunc(this.data));
 	}
     }
     
@@ -758,14 +757,14 @@
     };
     
     mpld3.Path.prototype.draw = function(){
-	this.pathfunc = mpld3.path()
+	this.datafunc = mpld3.path()
 	    .x(function(d){return this.xmap[this.prop.coordinates]
 		           (d[this.prop.xindex]);})
 	    .y(function(d){return this.ymap[this.prop.coordinates]
 		           (d[this.prop.yindex]);});
 	
 	this.path = this.ax.axes.append("svg:path")
-            .attr("d", this.pathfunc(this.data, this.pathcodes))
+            .attr("d", this.datafunc(this.data, this.pathcodes))
             .attr('class', "mpld3-path")
 	    .style("stroke", this.prop.edgecolor)
 	    .style("stroke-width", this.prop.edgewidth)
@@ -790,7 +789,7 @@
     
     mpld3.Path.prototype.zoomed = function(){
 	if(this.prop.coordinates === "data"){
-	    this.path.attr("d", this.pathfunc(this.data, this.pathcodes));
+	    this.path.attr("d", this.datafunc(this.data, this.pathcodes));
 	}
 	if(this.prop.offset !== null && this.prop.offsetcoordinates === "data"){
 	    var offset = [this.ax.x(this.prop.offset[0]),
