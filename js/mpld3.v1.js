@@ -15,8 +15,10 @@
 	version: "0.1",
 	figures: [],
 	plugin_map: {},
+	icon_dir: 'http://rawgithub.com/mpld3/mpld3_rewrite/master/icons/',
 	register_plugin: function(name, obj){mpld3.plugin_map[name] = obj;}
     };
+    console.warn("Using temporary icon directory: change this soon!");
     
     /* Figure object: */
     mpld3.Figure = function(figid, prop){
@@ -161,13 +163,15 @@
 	    case "reset":
 		this.toolbar.append("button")
 		    .attr("class", "mpld3-resetbutton")
-		    .style("background-image", "url(icons/home.png)")
+		    .style("background-image",
+			   "url(" + mpld3.icon_dir + "home.png)")
 		    .on("click", this.fig.reset.bind(this.fig));
 		break;
 	    case "move":
 		this.toolbar.append("button")
 		    .attr("class", "mpld3-movebutton")
-		    .style("background-image", "url(icons/move.png)")
+		    .style("background-image",
+               		   "url(" + mpld3.icon_dir + "move.png)")
 		    .on("click", this.toggle_zoom.bind(this));
 		this.fig.disable_zoom();
 		break;

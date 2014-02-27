@@ -6,10 +6,11 @@ from ._server import serve_and_open
 from .mplexporter import Exporter
 from .mpld3renderer import MPLD3Renderer
 
+import warnings
+warnings.warn("using temporary MPLD3_URL: switch to ghpages ASAP!")
 
 D3_URL = "http://d3js.org/d3.v3.min.js"
-MPLD3_URL = "js/mpld3.v1.js"
-
+MPLD3_URL = "http://rawgithub.com/mpld3/mpld3_rewrite/master/js/mpld3.v1.js"
 
 HTML_TEMPLATE = """
 <script type="text/javascript" src="{d3_url}"></script>
@@ -57,26 +58,24 @@ def fig_to_d3(fig, d3_url=None, mpld3_url=None, safemode=False, **kwargs):
     display_d3 : embed figure within the IPython notebook
     enable_notebook : automatically embed figures in the IPython notebook
     """
-    if d3_url is None:
-        d3_url = D3_URL
-    if mpld3_url is None:
-        mpld3_url = MPLD3_URL
-    figid = str(int(random.random() * 1E11))
+    # TODO: allow fig to be a list of figures?
+    d3_url = d3_url or D3_URL
+    mpld3_url = mpld3_url or MPLD3_URL
+    figid = str(id(fig)) + str(int(random.random() * 1E10))
+
     renderer = MPLD3Renderer()
     Exporter(renderer, **kwargs).run(fig)
-    figure_json = json.dumps(renderer.finished_figures[0][1])
+
+    fig, figure_json, extra_css, extra_js = renderer.finished_figures[0]
 
     if safemode:
         extra_css = ""
         extra_js = ""
-    else:
-        extra_css = renderer.finished_figures[0][2]
-        extra_js = renderer.finished_figures[0][3]
 
     return HTML_TEMPLATE.format(figid=figid,
                                 d3_url=d3_url,
                                 mpld3_url=mpld3_url,
-                                figure_json=figure_json,
+                                figure_json=json.dumps(figure_json),
                                 extra_css=extra_css,
                                 extra_js=extra_js)
 
