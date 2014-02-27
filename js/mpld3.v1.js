@@ -1074,52 +1074,69 @@ mpld3.Image.prototype.zoomed = function(){
 mpld3.PointLabelPlugin = function(fig, prop){
     this.fig = fig;
     var required = ["id"];
-    var defaults = {labels:null, hoffset:0, voffset:10};
+    var defaults = {labels:null, hoffset:0, voffset:10, location:'mouse'};
     this.prop = mpld3.process_props(this, prop, defaults, required);
 }
 
 mpld3.PointLabelPlugin.prototype.draw = function(){
     var obj = mpld3.get_element(this.prop.id, this.fig);
     var labels = this.prop.labels;
+    var loc = this.prop.location;
 
     this.tooltip = this.fig.canvas.append("text")
         .attr("class", "mpld3-tooltip-text")
 	.attr("x", 0)
 	.attr("y", 0)
 	.text("")
-        .attr("style", "text-anchor: middle;")
-        .style("visibility", "hidden");
+	.style("visibility", "hidden");
 
-    function mouseover(d, i){
-	var label = (labels === null)
-	    ? "(" + d[0] + ", " + d[1] + ")"
-	    : labels[i % labels.length];
-	    
+    if(loc == "bottom left" || loc == "top left"){
+	this.x = obj.ax.position[0] + 5 + this.prop.hoffset;
+	this.tooltip.style("text-anchor", "beginning")
+    }else if(loc == "bottom right" || loc == "top right"){
+	this.x = obj.ax.position[0] + obj.ax.width - 5 + this.prop.hoffset;
+	this.tooltip.style("text-anchor", "end");
+    }else{
+        this.tooltip.style("text-anchor", "middle");
+    }
+
+    if(loc == "bottom left" || loc == "bottom right"){
+	this.y = obj.ax.position[1] + 5 + this.prop.voffset;
+    }else if(loc == "top left" || loc == "top right"){
+	this.y = obj.ax.position[1] + obj.ax.height - 5 + this.prop.voffset;
+    }
+
+    function mouseover(d, i){	    
 	this.tooltip
 	    .style("visibility", "visible")
-	    .text(label);
+	    .text((labels === null) ? "(" + d[0] + ", " + d[1] + ")"
+		  : labels[i % labels.length]);
     }
 
     function mousemove(d, i){
-        // For some reason, this doesn't work in the notebook
-        // xy = d3.mouse(fig.canvas.node());
-        // use this instead
-        var ctm = this.fig.canvas.node().getScreenCTM();
-
-	// d3.event is inexplicably null sometimes... why?
-	// if it's null, we'll put the result in the bottom corner
-	if(d3.event === null){
-	    this.tooltip.attr("style", "text-anchor: end;")
-	    var x = obj.ax.position[0] + 0.98 * obj.ax.width;
-	    var y = obj.ax.position[1] + 0.98 * obj.ax.height;
-	}else{
-	    var x = d3.event.x - ctm.e - this.prop.hoffset;
-	    var y = d3.event.y - ctm.f - this.prop.voffset;
+	if(loc === "mouse"){
+	    // d3.event is inexplicably null sometimes... why?
+	    // if it's null, we'll put the result in the bottom corner
+	    if(d3.event === null){
+		console.warn("d3 event is null: putting " +
+			     "tooltip in bottom right");
+		loc = "bottom right";
+		this.x = obj.ax.position[0] + obj.ax.width - 5;
+		this.y = obj.ax.position[1] + obj.ax.height - 5;
+		this.tooltip.style("text-anchor", "end");
+	    }else{
+		// For some reason, this doesn't work in the notebook
+		// xy = d3.mouse(fig.canvas.node());
+		// use this instead
+		var ctm = this.fig.canvas.node().getScreenCTM();
+		this.x = d3.event.x - ctm.e - this.prop.hoffset;
+		this.y = d3.event.y - ctm.f - this.prop.voffset;
+	    }
 	}
 
         this.tooltip
-            .attr('x', x)
-            .attr('y', y);
+            .attr('x', this.x)
+            .attr('y', this.y);
     }
 
     function mouseout(d, i){

@@ -76,9 +76,13 @@ class PointLabelTooltip(PluginBase):
     >>> fig_to_d3(fig)
     """
     def __init__(self, points, labels=None,
-                 hoffset=0, voffset=10):
+                 hoffset=0, voffset=10, location="mouse"):
+        if location not in ["bottom left", "top left", "bottom right",
+                            "top right", "mouse"]:
+            raise ValueError("invalid location: {0}".format(location))
         self.dict_ = {"type": "pointlabel",
                       "id": str(id(points)),
                       "labels": labels,
                       "hoffset": hoffset,
-                      "voffset": voffset}
+                      "voffset": voffset,
+                      "location": location}
