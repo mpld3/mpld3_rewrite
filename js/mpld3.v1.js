@@ -158,7 +158,7 @@
 
 	mpld3.insert_css("div#"+this.fig.figid + " .mpld3-toolbar img",
 			 {width: "16px", height: "16px",
-			  cursor: "hand", opacity: 0.2})
+			  cursor: "pointer", opacity: 0.2})
 	mpld3.insert_css("div#"+this.fig.figid + " .mpld3-toolbar img.active",
 			 {opacity: 0.4})
 	mpld3.insert_css("div#"+this.fig.figid + " .mpld3-toolbar img.pressed",

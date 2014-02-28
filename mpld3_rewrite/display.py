@@ -1,5 +1,6 @@
 import random
 import json
+import jinja2
 
 from ._server import serve_and_open
 
@@ -12,24 +13,51 @@ warnings.warn("using temporary MPLD3_URL: switch to ghpages ASAP!")
 D3_URL = "http://d3js.org/d3.v3.min.js"
 MPLD3_URL = "http://rawgithub.com/mpld3/mpld3_rewrite/master/js/mpld3.v1.js"
 
-HTML_TEMPLATE = """
-<script type="text/javascript" src="{d3_url}"></script>
-<script type="text/javascript" src="{mpld3_url}"></script>
+HTML_TEMPLATE = jinja2.Template("""
+<script type="text/javascript" src="{{ d3_url }}"></script>
+<script type="text/javascript" src="{{ mpld3_url }}"></script>
 
 <style>
-{extra_css}
+{{ extra_css }}
 </style>
 
-<div id="fig{figid}"></div>
+<div id="fig{{ figid }}"></div>
 <script type="text/javascript">
-  {extra_js}
-  var spec{figid} = {figure_json};
-  var fig{figid} = mpld3.draw_figure("fig{figid}", spec{figid});
+  {{ extra_js }}
+  var spec{{ figid }} = {{ figure_json }};
+  var fig{{ figid }} = mpld3.draw_figure("fig{{ figid }}", spec{{ figid }});
 </script>
-"""
+""")
 
 
-def fig_to_d3(fig, d3_url=None, mpld3_url=None, safemode=False, **kwargs):
+HTML_TEMPLATE_REQUIREJS = jinja2.Template("""
+<style>
+{{ extra_css }}
+</style>
+
+<div id="fig{{ figid }}"></div>
+<script type="text/javascript">
+function create_{{ figid }}(){
+  {{ extra_js }}
+  mpld3.draw_figure("fig{{ figid }}", {{ figure_json }});
+}
+
+if(typeof(window.d3) === "undefined"){
+  require.config({paths: {d3: "{{ d3_url[:-3] }}"}});
+  require(["d3"], function(d3){
+    window.d3 = d3;
+    $.getScript("{{ mpld3_url }}", create_{{ figid }});
+    window.mpld3 = this.mpld3;
+  });
+}else{
+  create_{{ figid }}();
+}
+</script>
+""")
+
+
+def fig_to_d3(fig, d3_url=None, mpld3_url=None, safemode=False,
+              requirejs=True, **kwargs):
     """Output d3 representation of the figure
 
     Parameters
@@ -44,6 +72,9 @@ def fig_to_d3(fig, d3_url=None, mpld3_url=None, safemode=False, **kwargs):
         will be used.
     safemode : boolean
         If true, scrub any additional html
+    requirejs : boolean
+        If true, output HTML compatible with require.js. Otherwise, output
+        HTML compatible with no require.js
     **kwargs :
         Additional keyword arguments passed to mplexporter.Exporter
 
@@ -72,15 +103,20 @@ def fig_to_d3(fig, d3_url=None, mpld3_url=None, safemode=False, **kwargs):
         extra_css = ""
         extra_js = ""
 
-    return HTML_TEMPLATE.format(figid=figid,
-                                d3_url=d3_url,
-                                mpld3_url=mpld3_url,
-                                figure_json=json.dumps(figure_json),
-                                extra_css=extra_css,
-                                extra_js=extra_js)
+    if requirejs:
+        template = HTML_TEMPLATE_REQUIREJS
+    else:
+        template = HTML_TEMPLATE
+
+    return template.render(figid=figid,
+                           d3_url=d3_url,
+                           mpld3_url=mpld3_url,
+                           figure_json=json.dumps(figure_json),
+                           extra_css=extra_css,
+                           extra_js=extra_js)
 
 
-def display_d3(fig=None, closefig=True, d3_url=None, mpld3_url=None):
+def display_d3(fig=None, closefig=True, **kwargs):
     """Display figure in IPython notebook via the HTML display hook
 
     Parameters
@@ -90,12 +126,8 @@ def display_d3(fig=None, closefig=True, d3_url=None, mpld3_url=None):
     closefig : boolean (default: True)
         If true, close the figure so that the IPython matplotlib mode will not
         display the png version of the figure.
-    d3_url : string (optional)
-        The URL of the d3 library.  If not specified, a standard web path
-        will be used.
-    mpld3_url : string (optional)
-        The URL of the mpld3 library.  If not specified, a standard web path
-        will be used.
+    **kwargs :
+        additional keyword arguments are passed through to :func:`fig_to_d3`.
 
     Returns
     -------
@@ -114,11 +146,10 @@ def display_d3(fig=None, closefig=True, d3_url=None, mpld3_url=None):
         fig = plt.gcf()
     if closefig:
         plt.close(fig)
-    return HTML(fig_to_d3(fig, d3_url=d3_url, mpld3_url=mpld3_url))
+    return HTML(fig_to_d3(fig, **kwargs))
 
 
-def show_d3(fig=None, d3_url=None, mpld3_url=None,
-            ip='127.0.0.1', port=8888, n_retries=50):
+def show_d3(fig=None, ip='127.0.0.1', port=8888, n_retries=50, **kwargs):
     """Open figure in a web browser
 
     Similar behavior to plt.show().  This opens the D3 visualization of the
@@ -130,12 +161,6 @@ def show_d3(fig=None, d3_url=None, mpld3_url=None,
     fig : matplotlib figure
         The figure to display.  If not specified, the current active figure
         will be used.
-    d3_url : string (optional)
-        The URL of the d3 library.  If not specified, a standard web path
-        will be used.
-    mpld3_url : string (optional)
-        The URL of the mpld3 library.  If not specified, a standard web path
-        will be used.
     ip : string, default = '127.0.0.1'
         the ip address used for the local server
     port : int, default = 8888
@@ -143,6 +168,8 @@ def show_d3(fig=None, d3_url=None, mpld3_url=None,
         a nearby open port will be found (see n_retries)
     n_retries : int, default = 50
         the maximum number of ports to try when locating an empty port.
+    **kwargs :
+        additional keyword arguments are passed through to :func:`fig_to_d3`
 
     See Also
     --------
@@ -153,11 +180,13 @@ def show_d3(fig=None, d3_url=None, mpld3_url=None,
         # import here, in case matplotlib.use(...) is called by user
         import matplotlib.pyplot as plt
         fig = plt.gcf()
-    html = fig_to_d3(fig, d3_url=d3_url, mpld3_url=mpld3_url)
+    if "requirejs" not in kwargs:
+        kwargs["requirejs"] = False
+    html = fig_to_d3(fig, **kwargs)
     serve_and_open(html, ip=ip, port=port, n_retries=n_retries)
 
 
-def enable_notebook(d3_url=None):
+def enable_notebook(**kwargs):
     """Enable the automatic display of figures in the IPython Notebook.
 
     This function should be used with the inline Matplotlib backend
@@ -168,8 +197,8 @@ def enable_notebook(d3_url=None):
 
     Parameters
     ----------
-    d3_url : string (optional)
-        if specified, then find the d3 library at the provided URL
+    **kwargs : 
+        all keyword parameters are passed through to :func:`fig_to_d3`
 
     See Also
     --------
@@ -183,7 +212,7 @@ def enable_notebook(d3_url=None):
         raise ImportError('This feature requires IPython 1.0+ and Matplotlib')
     ip = get_ipython()
     formatter = ip.display_formatter.formatters['text/html']
-    formatter.for_type(Figure, lambda fig: fig_to_d3(fig, d3_url))
+    formatter.for_type(Figure, lambda fig, kwds=kwargs: fig_to_d3(fig, **kwds))
 
 
 def disable_notebook():
