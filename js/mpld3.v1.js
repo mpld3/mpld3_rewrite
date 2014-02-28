@@ -155,8 +155,8 @@
 	this.toolbar = this.fig.root.append("div")
 	    .attr("class", "mpld3-toolbar")
             .style("position", "absolute") // relative to parent div
-            .style("top", "3px")
-            .style("left", "3px");
+            .style("bottom", "0px")
+            .style("left", "0px");
 
 	mpld3.insert_css("div#"+this.fig.figid + " .mpld3-toolbar img",
 			 {width: "16px", height: "16px",
