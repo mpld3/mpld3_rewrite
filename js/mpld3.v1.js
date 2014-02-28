@@ -15,10 +15,8 @@
 	version: "0.1",
 	figures: [],
 	plugin_map: {},
-	icon_dir: 'http://rawgithub.com/mpld3/mpld3_rewrite/master/icons/',
 	register_plugin: function(name, obj){mpld3.plugin_map[name] = obj;}
     };
-    console.warn("Using temporary icon directory: change this soon!");
     
     /* Figure object: */
     mpld3.Figure = function(figid, prop){
@@ -147,7 +145,7 @@
     mpld3.Toolbar.prototype.add_button = function(cls, icon, click){
 	return this.toolbar.append("img")
 	    .attr("class", cls)
-	    .attr("src", mpld3.icon_dir + icon)
+	    .attr("src", mpld3.icons[icon])
 	    .on("click", click);
     }
     
@@ -170,11 +168,11 @@
 	    switch(this.prop[i])
 	    {
 	    case "reset":
-		this.add_button("mpld3-resetbutton", "home.png",
+		this.add_button("mpld3-resetbutton", "home",
 				 this.fig.reset.bind(this.fig));
 		break;
 	    case "move":
-		this.add_button("mpld3-movebutton", "move.png",
+		this.add_button("mpld3-movebutton", "move",
 				function(){
 				    this.fig.toggle_zoom();
 				    this.toolbar.selectAll(".mpld3-movebutton")
@@ -1344,6 +1342,9 @@
 	return mpld3_path();
     }
     
+    mpld3.icons = {home: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAABmJLR0QA/wD/AP+gvaeTAAAACXBI\nWXMAAAsTAAALEwEAmpwYAAAAB3RJTUUH3gIcACMoD/OzIwAAAJhJREFUOMtjYKAx4KDUgNsMDAx7\nyNV8i4GB4T8U76VEM8mGYNNMtCH4NBM0hBjNMIwSsMzQ0MamcDkDA8NmQi6xggpUoikwQbIkHk2u\nE0rLI7vCBknBSyxeRDZAE6qHgQkq+ZeBgYERSfFPAoHNDNUDN4BswIRmKgxwEasP2dlsDAwMYlA/\n/mVgYHiBpkkGKscIDaPfVMmuAGnOTaGsXF0MAAAAAElFTkSuQmCC\n",
+		   move: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAABmJLR0QA/wD/AP+gvaeTAAAACXBI\nWXMAAAsTAAALEwEAmpwYAAAAB3RJTUUH3gIcACQMfLHBNQAAANZJREFUOMud07FKA0EQBuAviaKB\nlFr7COJrpAyYRlKn8hECEkFEn8ROCCm0sBMRYgh5EgVFtEhsRjiO27vkBoZd/vn5d3b+XcrjFI9q\nxgXWkc8pUjOB93GMd3zgB9d1unjDSxmhWSHQqOJki+MtOuv/b3ZifUqctIrMxwhHuG1gim4Ma5kR\nWuEkXFgU4B0MW1Ho4TeyjX3s4TDq3zn8ALvZ7q5wX9DqLOHCDA95cFBAnOO1AL/ZdNopgY3fQcqF\nyriMe37hM9w521ZkkvlMo7o/8g7nZYQ/QDctp1nTCf0AAAAASUVORK5CYII=\n"}
+
     // Register mpld3. This will use module or requirejs if possible
     // The following is adapted from d3.js
     if (typeof define === "function" && define.amd) {
