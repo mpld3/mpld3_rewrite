@@ -24,7 +24,11 @@
     mpld3.Figure = function(figid, prop){
 	this.name = "mpld3.Figure";
 	this.figid = figid;
-	this.root = d3.select('#' + figid);
+
+	// Make a root div with relative positioning,
+	// so we can position elements absolutely within it.
+	this.root = d3.select('#' + figid)
+	               .append("div").style("position","relative");
 	
 	var required = ["width", "height"];
 	var defaults = {data:{},
@@ -140,35 +144,27 @@
 	this.prop = prop;
     };
 
-    mpld3.Toolbar.prototype.add_button = function(cls, bg, click){
-	this.toolbar.append("div")
-	    .attr("class", "mpld3-divider")
-	    .style("width", "5px")
-	    .style("height", "auto")
-	    .style("display", "inline-block");
-
-	return this.toolbar.append("button")
+    mpld3.Toolbar.prototype.add_button = function(cls, icon, click){
+	return this.toolbar.append("img")
 	    .attr("class", cls)
-	    .style("display", "inline-block")
-	    .style("background-image", "url(" + mpld3.icon_dir + bg + ")")
+	    .attr("src", mpld3.icon_dir + icon)
 	    .on("click", click);
     }
     
     mpld3.Toolbar.prototype.draw = function(){
 	this.toolbar = this.fig.root.append("div")
-	    .attr("class", "mpld3-toolbar");
+	    .attr("class", "mpld3-toolbar")
+            .style("position", "absolute") // relative to parent div
+            .style("top", "3px")
+            .style("left", "3px");
 
-	mpld3.insert_css("div#"+this.fig.figid +
-			 " .mpld3-toolbar button",
-			 {border: "2px outset",
-			  width: "38px",
-			  height: "38px",
-			  cursor: "hand",
-			  background: "#ffffff no-repeat 1px 1px"});
-	mpld3.insert_css("div#"+this.fig.figid +
-			 " .mpld3-toolbar button.pressed",
-			 {border: "2px inset",
-			  background: "eeeeee no-repeat 2px 2px"});
+	mpld3.insert_css("div#"+this.fig.figid + " .mpld3-toolbar img",
+			 {width: "16px", height: "16px",
+			  cursor: "hand", opacity: 0.2})
+	mpld3.insert_css("div#"+this.fig.figid + " .mpld3-toolbar img.active",
+			 {opacity: 0.4})
+	mpld3.insert_css("div#"+this.fig.figid + " .mpld3-toolbar img.pressed",
+			 {opacity: 0.6})
 
 	for(var i=0; i<this.prop.length; i++){
 	    switch(this.prop[i])
@@ -182,7 +178,8 @@
 				function(){
 				    this.fig.toggle_zoom();
 				    this.toolbar.selectAll(".mpld3-movebutton")
-					.classed({pressed: this.fig.zoom_on});
+					.classed({pressed: this.fig.zoom_on,
+						  active: !this.fig.zoom_on});
 				}.bind(this));
 		this.fig.disable_zoom();
 		break;
@@ -190,11 +187,11 @@
 		throw "toolbar '" + this.prop[i] + "' not recognized";
 	    }
 	}
-	this.toolbar.selectAll("button")
-	    .on("mouseup", function(){d3.select(this)
-				      .classed({pressed:false})})
-	    .on("mousedown", function(){d3.select(this)
-					.classed({pressed:true})});
+	this.toolbar.selectAll("img")
+           .on("mouseenter", function(){d3.select(this).classed({active:1})})
+           .on("mouseleave", function(){d3.select(this).classed({active:0})})
+           .on("mousedown", function(){d3.select(this).classed({pressed:1})})
+           .on("mouseup", function(){d3.select(this).classed({pressed:0})});
     };
     
     
