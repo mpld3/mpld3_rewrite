@@ -1,6 +1,9 @@
 
 all: build
 
+sync_current : mplexporter
+	rsync -r mplexporter/mplexporter mpld3_rewrite/
+
 sync_submodule : mplexporter
 	git submodule init
 	git submodule update

@@ -152,10 +152,9 @@ class MPLD3Renderer(Renderer):
         for text in labels:
             content = text.get_text()
             if content:
-                transform = text.get_transform()
-                position = text.get_position()
-                code, position = Exporter.process_transform(transform, ax,
-                                                            position)
+                code, position = Exporter.process_transform(
+                    text.get_transform(), ax, text.get_position(),
+                    force_trans=ax.transAxes)
                 style = utils.get_text_style(text)
                 self.draw_text(content, position, code, style)
 

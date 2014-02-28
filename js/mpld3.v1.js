@@ -193,7 +193,41 @@
            .on("mousedown", function(){d3.select(this).classed({pressed:1})})
            .on("mouseup", function(){d3.select(this).classed({pressed:0})});
     };
-    
+
+
+    /* Coordinates Object: */
+    /* Converts from the given units to axes (pixel) units */
+    mpld3.Coordinates = function(trans, ax){
+	if(typeof(ax) === "undefined"){
+	    this.ax = null;
+	    this.fig = null;
+	    if(this.trans !== "display"){
+		throw "ax must be defined if transform != 'display'";
+	    }
+	}else{
+	    this.ax = ax;
+	    this.fig = ax.fig;
+	}
+	this.x = this["x_" + trans];
+	this.y = this["y_" + trans];
+	if(typeof(this.x) === "undefined" || typeof(this.y) === "undefined"){
+	    throw "unrecognized coordinate code: " + trans;
+	}
+	this.zoomable = (trans === "data");
+    }
+
+    mpld3.Coordinates.prototype.x_data = function(x){return this.ax.x(x);}
+    mpld3.Coordinates.prototype.y_data = function(y){return this.ax.y(y);}
+    mpld3.Coordinates.prototype.x_display = function(x){return x;}
+    mpld3.Coordinates.prototype.y_display = function(y){return y;}
+    mpld3.Coordinates.prototype.x_axes = function(x){return x * this.ax.width;}
+    mpld3.Coordinates.prototype.y_axes = function(y){
+	return this.ax.height * (1 - y);}
+    mpld3.Coordinates.prototype.x_figure = function(x){
+	return x * this.fig.width - this.ax.position[0];}
+    mpld3.Coordinates.prototype.y_figure = function(y){
+	return (1 - y) * this.fig.height - this.ax.position[1];}
+
     
     /* Axes Object: */
     mpld3.Axes = function(fig, prop){
@@ -389,13 +423,6 @@
             .attr('height', this.height)
             .attr('class', "mpld3-baseaxes");
 	
-	this.axesbg = this.baseaxes.append("svg:rect")
-            .attr("width", this.width)
-            .attr("height", this.height)
-            .attr("class", "mpld3-axesbg")
-	    .style("fill", this.prop.axesbg)
-            .style("fill-opacity", this.prop.axesbgalpha);
-	
 	this.clip = this.baseaxes.append("svg:clipPath")
             .attr("id", this.clipid)
             .append("svg:rect")
@@ -408,6 +435,13 @@
             .attr("class", "mpld3-axes")
             .attr("clip-path", "url(#" + this.clipid + ")");
 	
+	this.axesbg = this.axes.append("svg:rect")
+            .attr("width", this.width)
+            .attr("height", this.height)
+            .attr("class", "mpld3-axesbg")
+	    .style("fill", this.prop.axesbg)
+            .style("fill-opacity", this.prop.axesbgalpha);
+	
 	for(var i=0; i<this.elements.length; i++){
 	    this.elements[i].draw();
 	}
@@ -416,16 +450,16 @@
     mpld3.Axes.prototype.enable_zoom = function(){
 	if(this.prop.zoomable){
 	    this.zoom.on("zoom", this.zoomed.bind(this));
-	    this.baseaxes.call(this.zoom);
-	    this.baseaxes.style("cursor", 'move');
+	    this.axes.call(this.zoom);
+	    this.axes.style("cursor", 'move');
 	}
     };
     
     mpld3.Axes.prototype.disable_zoom = function(){
 	if(this.prop.zoomable){
 	    this.zoom.on("zoom", null);
-	    this.baseaxes.on('.zoom', null)
-	    this.baseaxes.style('cursor', null);
+	    this.axes.on('.zoom', null)
+	    this.axes.style('cursor', null);
 	}
     };
     
@@ -680,6 +714,7 @@
 	
 	this.prop = mpld3.process_props(this, prop, defaults, required);
 	this.data = ax.fig.get_data(this.prop.data);
+	this.coords = new mpld3.Coordinates(this.prop.coordinates, this.ax);
     };
     
     mpld3.Line.prototype.filter = function(d){
@@ -690,27 +725,20 @@
     mpld3.Line.prototype.draw = function(){
 	this.datafunc = d3.svg.line()
             .interpolate("linear")
-            .defined(this.filter.bind(this));
-	
-	if(this.prop.coordinates === "data"){
-	    this.datafunc
-		.x(function(d) {return this.ax.x(d[this.prop.xindex]);})
-		.y(function(d) {return this.ax.y(d[this.prop.yindex]);});
-	}else{
-	    this.datafunc
-		.x(function(d) {return this.ax.xfigure(d[this.prop.xindex]);})
-		.y(function(d) {return this.ax.yfigure(d[this.prop.yindex]);});
-	}
+            .defined(this.filter.bind(this))
+	    .x(function(d){return this.coords.x(d[this.prop.xindex]);})
+	    .y(function(d){return this.coords.y(d[this.prop.yindex]);});
 	
 	this.line = this.ax.axes.append("svg:path")
 	    .data(this.data)
-            .attr("d", this.datafunc(this.data))
             .attr('class', 'mpld3-line')
 	    .style("stroke", this.prop.color)
 	    .style("stroke-width", this.prop.linewidth)
 	    .style("stroke-dasharray", this.prop.dasharray)
 	    .style("stroke-opacity", this.prop.alpha)
 	    .style("fill", "none");
+
+	this.line.attr("d", this.datafunc(this.data));
     }
     
     mpld3.Line.prototype.elements = function(d){
@@ -718,8 +746,7 @@
     };
     
     mpld3.Line.prototype.zoomed = function(){
-	// TODO: check coordinates (data vs figure)
-	if(this.prop.coordinates === "data"){
+	if(this.coords.zoomable){
 	    this.line.attr("d", this.datafunc(this.data));
 	}
     }
@@ -749,21 +776,17 @@
 	this.data = ax.fig.get_data(this.prop.data);
 	this.pathcodes = this.prop.pathcodes;
 	
-	this.xmap = {points:function(x){return x;},
-		     data:this.ax.x.bind(this.ax),
-		     figure:this.ax.xfigure.bind(this.ax)}
-	this.ymap = {points:function(y){return y;},
-		     data:this.ax.y.bind(this.ax),
-		     figure:this.ax.yfigure.bind(this.ax)}    
+	this.pathcoords = new mpld3.Coordinates(this.prop.coordinates,
+						this.ax);
+	this.offsetcoords = new mpld3.Coordinates(this.prop.offsetcoordinates,
+						  this.ax);
     };
     
     mpld3.Path.prototype.draw = function(){
 	this.datafunc = mpld3.path()
-	    .x(function(d){return this.xmap[this.prop.coordinates]
-		           (d[this.prop.xindex]);})
-	    .y(function(d){return this.ymap[this.prop.coordinates]
-		           (d[this.prop.yindex]);});
-	
+	    .x(function(d){return this.pathcoords.x(d[this.prop.xindex]);})
+	    .y(function(d){return this.pathcoords.y(d[this.prop.yindex]);});
+
 	this.path = this.ax.axes.append("svg:path")
             .attr("d", this.datafunc(this.data, this.pathcodes))
             .attr('class', "mpld3-path")
@@ -776,10 +799,8 @@
             .attr("vector-effect", "non-scaling-stroke");
 	
 	if(this.prop.offset !== null){
-	    var offset = [this.xmap[this.prop.offsetcoordinates]
-		          (this.prop.offset[0]),
-			  this.ymap[this.prop.offsetcoordinates]
-		          (this.prop.offset[1])];    
+	    var offset = [this.offsetcoords.x(this.prop.offset[0]),
+			  this.offsetcoords.y(this.prop.offset[1])];    
 	    this.path.attr("transform", "translate(" + offset + ")");
 	}
     };
@@ -822,24 +843,27 @@
 	this.data = ax.fig.get_data(this.prop.data);
 	
 	if(this.prop.markerpath !== null){
-	    this.marker = mpld3.path().call(this.prop.markerpath[0],
-					    this.prop.markerpath[1]);
+	    if(this.prop.markerpath[0].length > 0){
+		this.marker = mpld3.path().call(this.prop.markerpath[0],
+						this.prop.markerpath[1]);
+	    }else{
+		this.marker = null;
+	    }
 	}else{
-	    this.marker = d3.svg.symbol(this.prop.markername)
-	        .size(Math.pow(this.prop.markersize, 2));
+	    if(this.prop.markername !== null){
+		this.marker = d3.svg.symbol(this.prop.markername)
+	            .size(Math.pow(this.prop.markersize, 2));
+	    }else{
+		this.marker = null;
+	    }
 	}
+	this.coords = new mpld3.Coordinates(this.prop.coordinates, this.ax);
     };
     
     mpld3.Markers.prototype.translate = function(d){
-	if(this.prop.coordinates === "data"){
-	    return "translate("
-		+ this.ax.x(d[this.prop.xindex]) + ","
-		+ this.ax.y(d[this.prop.yindex]) + ")";
-	}else{
-	    return "translate("
-		+ this.ax.xfigure(d[this.prop.xindex]) + ","
-		+ this.ax.yfigure(d[this.prop.yindex]) + ")";
-	}
+	return "translate("
+	    + this.coords.x(d[this.prop.xindex]) + ","
+	    + this.coords.y(d[this.prop.yindex]) + ")";
     };
     
     mpld3.Markers.prototype.filter = function(d){
@@ -868,7 +892,7 @@
     };
     
     mpld3.Markers.prototype.zoomed = function(){
-	if(this.prop.coordinates === "data"){
+	if(this.coords.zoomable){
 	    this.pointsobj.attr("transform", this.translate.bind(this));
 	}
     };
@@ -916,13 +940,11 @@
 	    var o = offsets[i % offsets.length];
 	    this.offsets.push([o[this.prop.xindex], o[this.prop.yindex]]);
 	}
-	
-	this.xmap = {points:function(x){return x;},
-		     data:this.ax.x.bind(this.ax),
-		     figure:this.ax.xfigure.bind(this.ax)}
-	this.ymap = {points:function(y){return y;},
-		     data:this.ax.y.bind(this.ax),
-		     figure:this.ax.yfigure.bind(this.ax)}
+
+	this.pathcoords = new mpld3.Coordinates(this.prop.pathcoordinates,
+						this.ax);
+	this.offsetcoords = new mpld3.Coordinates(this.prop.offsetcoordinates,
+						  this.ax);
     };
     
     mpld3.PathCollection.prototype.transform_func = function(d, i){
@@ -940,10 +962,8 @@
 	if(d === null || typeof(d) === "undefined"){
 	    offset = "translate(0, 0)";
 	}else{
-	    offset = ("translate("
-		      + [this.xmap[this.prop.offsetcoordinates](d[0]),
-			 this.ymap[this.prop.offsetcoordinates](d[1])]
-		      +")");
+	    offset = ("translate(" + [this.offsetcoords.x(d[0]),
+				      this.offsetcoords.y(d[1])] +")");
 	}
 	
 	if(this.prop.offsetorder === "after"){
@@ -956,10 +976,8 @@
     mpld3.PathCollection.prototype.path_func = function(d, i){
 	var path = this.paths[i % this.paths.length]
 	var ret = mpld3.path()
-            .x(function(d){return this.xmap[this.prop.pathcoordinates]
-			   (d[0]);}.bind(this))
-            .y(function(d){return this.ymap[this.prop.pathcoordinates]
-		           (d[1]);}.bind(this))
+            .x(function(d){return this.pathcoords.x(d[0]);}.bind(this))
+            .y(function(d){return this.pathcoords.y(d[1]);}.bind(this))
             .call(path[0], path[1]);
 	return ret;
     };
@@ -1019,27 +1037,15 @@
 					["text", "position"]);
 	this.text = this.prop.text;
 	this.position = this.prop.position;
+	this.coords = new mpld3.Coordinates(this.prop.coordinates,
+						 this.ax);
     };
     
     mpld3.Text.prototype.draw = function(){
-	var pos_x, pos_y;
 	if(this.prop.coordinates == "data"){
-	    pos_x = this.ax.x(this.position[0]);
-	    pos_y = this.ax.y(this.position[1]);
-	    this.obj = this.ax.axes.append("text")
-		.attr("x", pos_x)
-		.attr("y", pos_y);
+	    this.obj = this.ax.axes.append("text");
 	}else{
-	    pos_x = this.position[0];
-	    pos_y = this.ax.fig.height - this.position[1];
-	    this.obj = this.ax.fig.canvas.append("text")
-		.attr("x", pos_x)
-		.attr("y", pos_y);
-	}
-	
-	if(this.prop.rotation){
-	    this.obj.attr("transform", "rotate(" + this.prop.rotation + ","
-			  + pos_x + "," + pos_y + ")");
+	    this.obj = this.ax.baseaxes.append("text");
 	}
 	
 	this.obj.attr("class", "mpld3-text")
@@ -1049,6 +1055,19 @@
 	    .style("font-size", this.prop.fontsize)
 	    .style("fill", this.prop.color)
 	    .style("opacity", this.prop.alpha);
+	
+	var pos_x = this.coords.x(this.position[0]);
+	var pos_y = this.coords.y(this.position[1]);
+
+	this.obj
+	    .attr("x", pos_x)
+	    .attr("y", pos_y);
+	
+	if(this.prop.rotation){
+	    this.obj.attr("transform", "rotate("
+			  + this.prop.rotation + ","
+			  + pos_x + "," + pos_y + ")");
+	}
     };
     
     mpld3.Text.prototype.elements = function(d){
@@ -1056,11 +1075,12 @@
     };
     
     mpld3.Text.prototype.zoomed = function(){
-	if(this.prop.coordinates == "data"){
-	    pos_x = this.ax.x(this.position[0]);
-	    pos_y = this.ax.y(this.position[1]);
+	if(this.coords.zoomable){
+	    pos_x = this.coords.x(this.position[0]);
+	    pos_y = this.coords.y(this.position[1]);
 	    
-	    this.obj.attr("x", pos_x)
+	    this.obj
+		.attr("x", pos_x)
 		.attr("y", pos_y);
 	    
 	    if(this.prop.rotation){
@@ -1080,6 +1100,7 @@
 	 		zorder: 1,
 			id: mpld3.generate_id()};
 	this.prop = mpld3.process_props(this, prop, defaults, required);
+	this.coords = new mpld3.Coordinates(this.prop.coordinates, this.ax);
     };
     
     mpld3.Image.prototype.draw = function(){
@@ -1098,10 +1119,10 @@
     mpld3.Image.prototype.zoomed = function(){
 	var extent = this.prop.extent;
 	this.image
-	    .attr("x", this.ax.x(extent[0]))
-            .attr("y", this.ax.y(extent[3]))
-            .attr("width", this.ax.x(extent[1]) - this.ax.x(extent[0]))
-            .attr("height", this.ax.y(extent[2]) - this.ax.y(extent[3]));
+	    .attr("x", this.coords.x(extent[0]))
+            .attr("y", this.coords.y(extent[3]))
+            .attr("width", this.coords.x(extent[1])-this.coords.x(extent[0]))
+            .attr("height", this.coords.y(extent[2])-this.coords.y(extent[3]));
     };
     
     

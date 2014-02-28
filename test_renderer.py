@@ -2,6 +2,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 from mpld3_rewrite import fig_to_d3
 
+D3_URL = 'js/d3.v3.min.js'
+MPLD3_URL = 'js/mpld3.v1.js'
+
 
 def test1(filename):
     x = np.linspace(0, 10, 50)
@@ -25,7 +28,8 @@ def test1(filename):
                             alpha=0.2))
 
     print("writing to {0}".format(filename))
-    open(filename, 'w').write(fig_to_d3(fig, d3_url='js/d3.v3.min.js'))
+    open(filename, 'w').write(fig_to_d3(fig, d3_url=D3_URL,
+                                        mpld3_url=MPLD3_URL))
 
 
 def test2(filename):
@@ -38,7 +42,8 @@ def test2(filename):
                alpha=0.3)
 
     print("writing to {0}".format(filename))
-    open(filename, 'w').write(fig_to_d3(fig, d3_url='js/d3.v3.min.js'))
+    open(filename, 'w').write(fig_to_d3(fig, d3_url=D3_URL,
+                                        mpld3_url=MPLD3_URL))
 
 
 def test3(filename):
@@ -65,7 +70,8 @@ def test3(filename):
     ax.set_ylim(9, 21)
 
     print("writing to {0}".format(filename))
-    open(filename, 'w').write(fig_to_d3(fig, d3_url='js/d3.v3.min.js'))
+    open(filename, 'w').write(fig_to_d3(fig, d3_url=D3_URL,
+                                        mpld3_url=MPLD3_URL))
 
 def test4(filename):
     from sklearn.datasets import load_iris
@@ -92,7 +98,8 @@ def test4(filename):
             axis.set_major_formatter(plt.NullFormatter())
             
     print("writing to {0}".format(filename))
-    open(filename, 'w').write(fig_to_d3(fig, d3_url='js/d3.v3.min.js'))
+    open(filename, 'w').write(fig_to_d3(fig, d3_url=D3_URL,
+                                        mpld3_url=MPLD3_URL))
 
 
 
