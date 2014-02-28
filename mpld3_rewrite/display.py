@@ -42,12 +42,11 @@ function create_{{ figid }}(){
   mpld3.draw_figure("fig{{ figid }}", {{ figure_json }});
 }
 
-if(typeof(window.d3) === "undefined"){
+if(typeof(window.mpld3) === "undefined"){
   require.config({paths: {d3: "{{ d3_url[:-3] }}"}});
   require(["d3"], function(d3){
     window.d3 = d3;
     $.getScript("{{ mpld3_url }}", create_{{ figid }});
-    window.mpld3 = this.mpld3;
   });
 }else{
   create_{{ figid }}();
