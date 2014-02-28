@@ -13,7 +13,11 @@ warnings.warn("using temporary MPLD3_URL: switch to ghpages ASAP!")
 D3_URL = "http://d3js.org/d3.v3.min.js"
 MPLD3_URL = "http://rawgithub.com/mpld3/mpld3_rewrite/master/js/mpld3.v1.js"
 
-HTML_TEMPLATE = jinja2.Template("""
+
+# Simple HTML template. This works in standalone web pages for single figures,
+# but will not work within the IPython notebook due to the presence of
+# requirejs
+SIMPLE_HTML = jinja2.Template("""
 <script type="text/javascript" src="{{ d3_url }}"></script>
 <script type="text/javascript" src="{{ mpld3_url }}"></script>
 
@@ -30,7 +34,9 @@ HTML_TEMPLATE = jinja2.Template("""
 """)
 
 
-HTML_TEMPLATE_REQUIREJS = jinja2.Template("""
+# RequireJS template.  If requirejs and jquery are not defined, this will
+# result in an error.  This is suitable for use within the IPython notebook.
+REQUIREJS_HTML = jinja2.Template("""
 <style>
 {{ extra_css }}
 </style>
@@ -55,8 +61,55 @@ if(typeof(window.mpld3) === "undefined"){
 """)
 
 
+# General HTML template.  This should work correctly whether or not requirejs
+# is defined, and whether it's embedded in a notebook or in a standalone
+# HTML page.
+GENERAL_HTML = jinja2.Template("""
+<style>
+{{ extra_css }}
+</style>
+
+<div id="fig{{ figid }}"></div>
+<script>
+function mpld3_load_lib(url, callback){
+  var s = document.createElement('script');
+  s.src = url;
+  s.async = true;
+  s.onreadystatechange = s.onload = callback;
+  s.onerror = function(){console.warn("failed to load library " + url);};
+  document.getElementsByTagName("head")[0].appendChild(s);
+}
+
+function create_fig{{ figid }}(){
+  {{ extra_js }}
+  mpld3.draw_figure("fig{{ figid }}", {{ figure_json }});
+}
+
+if(typeof(mpld3) !== "undefined"){
+   // already loaded: just create the figure
+   create_fig{{ figid }}();
+}else if(typeof define === "function" && define.amd){
+   // require.js is available: use it to load d3/mpld3
+   require.config({paths: {d3: "{{ d3_url[:-3] }}"}});
+   require(["d3"], function(d3){
+      window.d3 = d3;
+      mpld3_load_lib("{{ mpld3_url }}", create_fig{{ figid }});
+    });
+}else{
+    // require.js not available: dynamically load d3 & mpld3
+    mpld3_load_lib("{{ d3_url }}", function(){
+        mpld3_load_lib("{{ mpld3_url }}", create_fig{{ figid }});})
+}
+</script>
+""")
+
+TEMPLATE_DICT = {"simple": SIMPLE_HTML,
+                 "notebook": REQUIREJS_HTML,
+                 "general": GENERAL_HTML}
+
+
 def fig_to_d3(fig, d3_url=None, mpld3_url=None, safemode=False,
-              requirejs=True, **kwargs):
+              template_type="general", **kwargs):
     """Output d3 representation of the figure
 
     Parameters
@@ -71,9 +124,14 @@ def fig_to_d3(fig, d3_url=None, mpld3_url=None, safemode=False,
         will be used.
     safemode : boolean
         If true, scrub any additional html
-    requirejs : boolean
-        If true, output HTML compatible with require.js. Otherwise, output
-        HTML compatible with no require.js
+    template_type : string
+        string specifying the type of HTML template to use. Options are
+        - "simple"   : suitable for a simple html page with one figure.  Will
+                       fail if require.js is available on the page.
+        - "notebook" : assumes require.js and jquery are available.
+        - "general"  : more complicated, but works both in and out of the
+                       notebook, whether or not require.js and jquery are
+                       available
     **kwargs :
         Additional keyword arguments passed to mplexporter.Exporter
 
@@ -93,6 +151,8 @@ def fig_to_d3(fig, d3_url=None, mpld3_url=None, safemode=False,
     mpld3_url = mpld3_url or MPLD3_URL
     figid = str(id(fig)) + str(int(random.random() * 1E10))
 
+    template = TEMPLATE_DICT[template_type]
+
     renderer = MPLD3Renderer()
     Exporter(renderer, **kwargs).run(fig)
 
@@ -101,11 +161,6 @@ def fig_to_d3(fig, d3_url=None, mpld3_url=None, safemode=False,
     if safemode:
         extra_css = ""
         extra_js = ""
-
-    if requirejs:
-        template = HTML_TEMPLATE_REQUIREJS
-    else:
-        template = HTML_TEMPLATE
 
     return template.render(figid=figid,
                            d3_url=d3_url,
@@ -179,8 +234,6 @@ def show_d3(fig=None, ip='127.0.0.1', port=8888, n_retries=50, **kwargs):
         # import here, in case matplotlib.use(...) is called by user
         import matplotlib.pyplot as plt
         fig = plt.gcf()
-    if "requirejs" not in kwargs:
-        kwargs["requirejs"] = False
     html = fig_to_d3(fig, **kwargs)
     serve_and_open(html, ip=ip, port=port, n_retries=n_retries)
 

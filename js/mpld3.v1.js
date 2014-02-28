@@ -1109,7 +1109,7 @@
     mpld3.TooltipPlugin = function(fig, prop){
 	this.fig = fig;
 	var required = ["id"];
-	var defaults = {labels:null, hoffset:0, voffset:20, location:'mouse'};
+	var defaults = {labels:null, hoffset:0, voffset:10, location:'mouse'};
 	this.prop = mpld3.process_props(this, prop, defaults, required);
     }
     
@@ -1141,7 +1141,7 @@
 	    this.y = obj.ax.position[1] + 5 + this.prop.voffset;
 	}
 	
-	function mouseover(d, i){	    
+	function mouseover(d, i){
 	    this.tooltip
 		.style("visibility", "visible")
 		.text((labels === null) ? "(" + d[0] + ", " + d[1] + ")"
@@ -1150,19 +1150,9 @@
 	
 	function mousemove(d, i){
 	    if(loc === "mouse"){
-		// d3.event is inexplicably null sometimes... why?
-		// if it's null, we'll put the result in the bottom corner
-		if(d3.event === null){
-		    console.warn("d3 event is null: putting " +
-				 "tooltip in bottom right");
-		    loc = "bottom right";
-		    this.x = obj.ax.position[0] + obj.ax.width - 5;
-		    this.y = obj.ax.position[1] + obj.ax.height - 5;
-		    this.tooltip.style("text-anchor", "end");
-		}else{
-		    this.x = d3.event.pageX + this.prop.hoffset;
-		    this.y = d3.event.pageY - this.prop.voffset;
-		}
+		var pos = d3.mouse(this.fig.canvas.node())
+		this.x = pos[0] + this.prop.hoffset;
+		this.y = pos[1] - this.prop.voffset;
 	    }
 	    
             this.tooltip

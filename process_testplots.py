@@ -102,8 +102,7 @@ def combine_testplots(wildcard='test_plots/*.py',
             if fig is not None:
                 fig_html.append("\n<div class='fig'>\n{0}\n</div>"
                                 "\n".format(fig_to_d3(fig, d3_url=d3_url,
-                                                      mpld3_url=mpld3_url,
-                                                      requirejs=False)))
+                                                      mpld3_url=mpld3_url)))
 
                 figfile = os.path.splitext(filename)[0] + '.png'
                 fig.savefig(figfile)

@@ -75,7 +75,7 @@ class PointLabelTooltip(PluginBase):
         supplied, the (x, y) values will be used.
     hoffset, voffset : integer
         The number of pixels to offset the tooltip text.  Default is
-        hoffset = 0, voffset = 20
+        hoffset = 0, voffset = 10
 
     Examples
     --------
@@ -87,7 +87,7 @@ class PointLabelTooltip(PluginBase):
     >>> fig_to_d3(fig)
     """
     def __init__(self, points, labels=None,
-                 hoffset=0, voffset=20, location="mouse"):
+                 hoffset=0, voffset=10, location="mouse"):
         if location not in ["bottom left", "top left", "bottom right",
                             "top right", "mouse"]:
             raise ValueError("invalid location: {0}".format(location))
@@ -115,7 +115,7 @@ class LineLabelTooltip(PluginBase):
         supplied, the (x, y) values will be used.
     hoffset, voffset : integer
         The number of pixels to offset the tooltip text.  Default is
-        hoffset = 0, voffset = 20
+        hoffset = 0, voffset = 10
 
     Examples
     --------
@@ -127,7 +127,7 @@ class LineLabelTooltip(PluginBase):
     >>> fig_to_d3(fig)
     """
     def __init__(self, points, label=None,
-                 hoffset=0, voffset=20, location="mouse"):
+                 hoffset=0, voffset=10, location="mouse"):
         if location not in ["bottom left", "top left", "bottom right",
                             "top right", "mouse"]:
             raise ValueError("invalid location: {0}".format(location))
