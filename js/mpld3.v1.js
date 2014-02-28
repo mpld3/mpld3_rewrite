@@ -6,11 +6,11 @@
 /* - the objects here use prototype-based definitions rather than           */
 /*   closure-based definitions for the sake of memory efficiency.           */
 /*                                                                          */
-/* - Loading uses require.js if available (similar to d3js itself)          */
-/*                                                                          */
+/* - this assumes that d3 is defined in the global namespace, and the       */
+/*   result is that mpld3 is defined in the global namespace.               */
 /*                                                                          */
 
-!function(){
+!(function(d3){
     var mpld3 = {
 	version: "0.1",
 	figures: [],
@@ -1344,14 +1344,7 @@
     
     mpld3.icons = {home: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAABmJLR0QA/wD/AP+gvaeTAAAACXBI\nWXMAAAsTAAALEwEAmpwYAAAAB3RJTUUH3gIcACMoD/OzIwAAAJhJREFUOMtjYKAx4KDUgNsMDAx7\nyNV8i4GB4T8U76VEM8mGYNNMtCH4NBM0hBjNMIwSsMzQ0MamcDkDA8NmQi6xggpUoikwQbIkHk2u\nE0rLI7vCBknBSyxeRDZAE6qHgQkq+ZeBgYERSfFPAoHNDNUDN4BswIRmKgxwEasP2dlsDAwMYlA/\n/mVgYHiBpkkGKscIDaPfVMmuAGnOTaGsXF0MAAAAAElFTkSuQmCC\n",
 		   move: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAABmJLR0QA/wD/AP+gvaeTAAAACXBI\nWXMAAAsTAAALEwEAmpwYAAAAB3RJTUUH3gIcACQMfLHBNQAAANZJREFUOMud07FKA0EQBuAviaKB\nlFr7COJrpAyYRlKn8hECEkFEn8ROCCm0sBMRYgh5EgVFtEhsRjiO27vkBoZd/vn5d3b+XcrjFI9q\nxgXWkc8pUjOB93GMd3zgB9d1unjDSxmhWSHQqOJki+MtOuv/b3ZifUqctIrMxwhHuG1gim4Ma5kR\nWuEkXFgU4B0MW1Ho4TeyjX3s4TDq3zn8ALvZ7q5wX9DqLOHCDA95cFBAnOO1AL/ZdNopgY3fQcqF\nyriMe37hM9w521ZkkvlMo7o/8g7nZYQ/QDctp1nTCf0AAAAASUVORK5CYII=\n"}
-
-    // Register mpld3. This will use module or requirejs if possible
-    // The following is adapted from d3.js
-    if (typeof define === "function" && define.amd) {
-	define(mpld3);
-    } else if (typeof module === "object" && module.exports) {
-	module.exports = mpld3;
-    } else {
-	this.mpld3 = mpld3;
-    }
-}();
+    
+    // put mpld3 in the global namespace
+    this.mpld3 = mpld3;
+})(d3);
