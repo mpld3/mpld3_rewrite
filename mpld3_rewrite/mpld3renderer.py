@@ -205,7 +205,8 @@ class MPLD3Renderer(Renderer):
         pathsdict['id'] = get_id(mplobj)
         self.axes_json['collections'].append(pathsdict)
 
-    def draw_text(self, text, position, coordinates, style, mplobj=None):
+    def draw_text(self, text, position, coordinates, style,
+                  text_type=None, mplobj=None):
         text = dict(text=text,
                     position=tuple(position),
                     coordinates=coordinates,
