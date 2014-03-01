@@ -6,7 +6,7 @@ from ._server import serve_and_open
 
 from .mplexporter import Exporter
 from .mpld3renderer import MPLD3Renderer
-from .urls import D3_URL, MPLD3_URL
+from . import urls
 
 
 # Simple HTML template. This works in standalone web pages for single figures,
@@ -142,8 +142,8 @@ def fig_to_d3(fig, d3_url=None, mpld3_url=None, safemode=False,
     enable_notebook : automatically embed figures in the IPython notebook
     """
     # TODO: allow fig to be a list of figures?
-    d3_url = d3_url or D3_URL
-    mpld3_url = mpld3_url or MPLD3_URL
+    d3_url = d3_url or urls.D3_URL
+    mpld3_url = mpld3_url or urls.MPLD3_URL
     figid = str(id(fig)) + str(int(random.random() * 1E10))
 
     template = TEMPLATE_DICT[template_type]
@@ -198,7 +198,8 @@ def display_d3(fig=None, closefig=True, **kwargs):
     return HTML(fig_to_d3(fig, **kwargs))
 
 
-def show_d3(fig=None, ip='127.0.0.1', port=8888, n_retries=50, **kwargs):
+def show_d3(fig=None, ip='127.0.0.1', port=8888, n_retries=50,
+            local=True, **kwargs):
     """Open figure in a web browser
 
     Similar behavior to plt.show().  This opens the D3 visualization of the
@@ -217,6 +218,9 @@ def show_d3(fig=None, ip='127.0.0.1', port=8888, n_retries=50, **kwargs):
         a nearby open port will be found (see n_retries)
     n_retries : int, default = 50
         the maximum number of ports to try when locating an empty port.
+    local : bool, default = True
+        if True, use the local d3 & mpld3 javascript versions, within the
+        js/ folder.  If False, use the standard urls.
     **kwargs :
         additional keyword arguments are passed through to :func:`fig_to_d3`
 
@@ -225,12 +229,22 @@ def show_d3(fig=None, ip='127.0.0.1', port=8888, n_retries=50, **kwargs):
     display_d3 : embed figure within the IPython notebook
     enable_notebook : automatically embed figures in the IPython notebook
     """
+    if local:
+        kwargs['mpld3_url'] = '/mpld3.js'
+        kwargs['d3_url'] = '/d3.js'
+        files = {'/mpld3.js': ["text/javascript",
+                               open(urls.MPLD3_LOCAL, 'r').read()],
+                 '/d3.js': ["text/javascript",
+                            open(urls.D3_LOCAL, 'r').read()]}
+    else:
+        files = None
+
     if fig is None:
         # import here, in case matplotlib.use(...) is called by user
         import matplotlib.pyplot as plt
         fig = plt.gcf()
     html = fig_to_d3(fig, **kwargs)
-    serve_and_open(html, ip=ip, port=port, n_retries=n_retries)
+    serve_and_open(html, ip=ip, port=port, n_retries=n_retries, files=files)
 
 
 def enable_notebook(**kwargs):
@@ -244,7 +258,7 @@ def enable_notebook(**kwargs):
 
     Parameters
     ----------
-    **kwargs : 
+    **kwargs :
         all keyword parameters are passed through to :func:`fig_to_d3`
 
     See Also
