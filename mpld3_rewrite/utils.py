@@ -20,6 +20,6 @@ def deprecated(func, old_name, new_name):
     def new_func(*args, **kwargs):
         warnings.warn(("{0} is deprecated and will be removed.  "
                        "Use {1} instead".format(old_name, new_name)),
-                      category=DeprecationsWarning)
+                      category=DeprecationWarning)
         return func(*args, **kwargs)
     return new_func
