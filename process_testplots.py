@@ -8,7 +8,7 @@ import os
 import glob
 import sys
 import mpld3_rewrite as mpld3
-from mpld3_rewrite import fig_to_d3
+from mpld3_rewrite import fig_to_html
 
 import matplotlib
 matplotlib.use('Agg') #don't display plots
@@ -102,8 +102,8 @@ def combine_testplots(wildcard='test_plots/*.py',
 
             if fig is not None:
                 fig_html.append("\n<div class='fig'>\n{0}\n</div>"
-                                "\n".format(fig_to_d3(fig, d3_url=d3_url,
-                                                      mpld3_url=mpld3_url)))
+                                "\n".format(fig_to_html(fig, d3_url=d3_url,
+                                                        mpld3_url=mpld3_url)))
 
                 figfile = os.path.splitext(filename)[0] + '.png'
                 fig.savefig(figfile)

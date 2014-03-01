@@ -80,11 +80,11 @@ class PointLabelTooltip(PluginBase):
     Examples
     --------
     >>> import matplotlib.pyplot as plt
-    >>> from mpld3 import fig_to_d3, plugins
+    >>> from mpld3 import fig_to_html, plugins
     >>> fig, ax = plt.subplots()
     >>> points = ax.plot(range(10), 'o')
     >>> plugins.connect(fig, PointLabelTooltip(points[0]))
-    >>> fig_to_d3(fig)
+    >>> fig_to_html(fig)
     """
     def __init__(self, points, labels=None,
                  hoffset=0, voffset=10, location="mouse"):
@@ -120,11 +120,11 @@ class LineLabelTooltip(PluginBase):
     Examples
     --------
     >>> import matplotlib.pyplot as plt
-    >>> from mpld3 import fig_to_d3, plugins
+    >>> from mpld3 import fig_to_html, plugins
     >>> fig, ax = plt.subplots()
     >>> points = ax.plot(range(10), 'o')
     >>> plugins.connect(fig, PointLabelTooltip(points[0]))
-    >>> fig_to_d3(fig)
+    >>> fig_to_html(fig)
     """
     def __init__(self, points, label=None,
                  hoffset=0, voffset=10, location="mouse"):
@@ -157,12 +157,12 @@ class PointHTMLTooltip(PluginBase):
     Examples
     --------
     >>> import matplotlib.pyplot as plt
-    >>> from mpld3 import fig_to_d3, plugins
+    >>> from mpld3 import fig_to_html, plugins
     >>> fig, ax = plt.subplots()
     >>> points = ax.plot(range(10), 'o')
     >>> labels = ['<h1>{title}</h1>'.format(title=i) for i in range(10)]
     >>> plugins.connect(fig, PointHTMLTooltip(points[0], labels))
-    >>> fig_to_d3(fig)
+    >>> fig_to_html(fig)
     """
 
     JAVASCRIPT = """
