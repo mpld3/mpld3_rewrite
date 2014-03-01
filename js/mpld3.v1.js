@@ -246,8 +246,6 @@
 			"ydomain": null,
 			"xscale": "linear",
 			"yscale": "linear",
-			"xgridOn": false,
-			"ygridOn": false,
 			"zoomable": true,
 			"axes": [{position:"left"},
 				 {position:"bottom"}],
@@ -341,19 +339,13 @@
 	var collections = this.prop.collections;
 	var images = this.prop.images;
 	
-	// Add axes
+	// Add axes and grids
 	for(var i=0; i<axes.length; i++){
-	    this.elements.push(new mpld3.Axis(this, axes[i]));
-	}
-	
-	// Add grids
-	if(this.prop.xgridOn){
-	    this.prop.xgridprops.xy = "x";
-	    this.elements.push(new mpld3.Grid(this, this.prop.xgridprops));
-	}
-	if(this.prop.ygridOn){
-	    this.prop.ygridprops.xy = "y";
-	    this.elements.push(new mpld3.Grid(this, this.prop.ygridprops));
+	    var axis = new mpld3.Axis(this, axes[i])
+	    this.elements.push(axis);
+	    if(axis.prop.grid.gridOn){
+		this.elements.push(axis.getGrid());
+	    }
 	}
 	
 	// Add lines
@@ -577,29 +569,27 @@
 			fontsize : "11px",
 			fontcolor : "black",
 			axiscolor : "black",
+			grid : {},
 			zorder: 0,
 			id: mpld3.generate_id()}
 	this.prop = mpld3.process_props(this, prop, defaults, required);
-	
-	var position = this.prop.position;
-	if (position == "bottom"){
-	    this.transform = "translate(0," + this.axes.height + ")";
-	    this.scale = this.axes.xdom;
-	    this.cssclass = "x axis";
-	}else if (position == "top"){
-	    this.transform = "translate(0,0)"
-	    this.scale = this.axes.xdom;
-	    this.cssclass = "x axis";
-	}else if (position == "left"){
-	    this.transform = "translate(0,0)";
-	    this.scale = this.axes.ydom;
-	    this.cssclass = "y axis";
-	}else{
-	    this.transform = "translate(" + this.axes.width + ",0)";
-	    this.scale = this.axes.ydom;
-	    this.cssclass = "y axis";
-	}
-    }
+
+	var trans = {bottom: [0, this.axes.height], top: [0, 0],
+		     left: [0, 0], right: [this.axes.width, 0]};
+	var xy = {bottom: 'x', top: 'x', left: 'y', right: 'y'}
+
+	this.transform = "translate(" + trans[this.prop.position] + ")";
+	this.prop.xy = xy[this.prop.position];
+	this.cssclass = "mpld3-" + this.prop.xy + "axis";
+	this.scale = this.axes[this.prop.xy + "dom"];
+    };
+
+    mpld3.Axis.prototype.getGrid = function(){
+	var gridprop = {nticks: this.prop.nticks, zorder: this.prop.zorder,
+			tickvalues: this.prop.tickvalues, xy: this.prop.xy}
+	for(var key in this.prop.grid){gridprop[key] = this.prop.grid[key];}
+	return new mpld3.Grid(this.axes, gridprop);
+    };
     
     mpld3.Axis.prototype.draw = function(){
 	this.axis = d3.svg.axis()
@@ -609,7 +599,7 @@
             .tickValues(this.prop.tickvalues)
             .tickFormat(this.prop.tickformat);
 	
-    this.elem = this.axes.baseaxes.append('g')
+	this.elem = this.axes.baseaxes.append('g')
             .attr("transform", this.transform)
             .attr("class", this.cssclass)
             .call(this.axis);
@@ -617,11 +607,13 @@
 	// We create header-level CSS to style these elements, because
 	// zooming/panning creates new elements with these classes.
 	mpld3.insert_css("div#" + this.axes.fig.figid
-			 + " .axis line, .axis path",
+			 + " ." + this.cssclass + " line, "
+			 + " ." + this.cssclass + " path",
 			 {"shape-rendering":"crispEdges",
 			  "stroke":this.prop.axiscolor,
 			  "fill":"none"});
-	mpld3.insert_css("div#" + this.axes.fig.figid + " .axis text",
+	mpld3.insert_css("div#" + this.axes.fig.figid
+			 + " ." + this.cssclass + " text",
 			 {"font-family": "sans-serif",
 			  "font-size": this.prop.fontsize,
 			  "fill": this.prop.fontcolor,
@@ -647,7 +639,7 @@
 			zorder: 0,
 			id: mpld3.generate_id()};
 	this.prop = mpld3.process_props(this, prop, defaults, required);
-	this.cssclass = this.prop.xy + "grid";
+	this.cssclass = "mpld3-" + this.prop.xy + "grid";
 	
 	if(this.prop.xy == "x"){
 	    this.transform = "translate(0," + this.axes.height + ")";
@@ -667,9 +659,9 @@
     mpld3.Grid.prototype.draw = function(){
 	this.grid = d3.svg.axis()
             .scale(this.scale)
+            .orient(this.position)
             .ticks(this.prop.nticks)
             .tickValues(this.prop.tickvalues)
-            .orient(this.position)
             .tickSize(this.tickSize, 0, 0)
             .tickFormat("");
 	this.elem = this.axes.axes.append("g")
@@ -1210,6 +1202,18 @@
     
     /**********************************************************************/
     /* Convenience Functions                                              */
+
+    mpld3.merge_objects = function(_){
+	var output = {};
+	var obj;
+	for(var i=0; i<arguments.length; i++){
+	    obj = arguments[i];
+	    for (var attr in obj){
+		output[attr] = obj[attr];
+	    }
+	}
+	return output;
+    }
     
     mpld3.generate_id = function(N, chars){
 	if(typeof(N) === "undefined"){N=10;}
