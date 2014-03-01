@@ -242,6 +242,7 @@
 			"axesbg": "#FFFFFF",
 			"id": mpld3.generate_id(),
 			"axesbgalpha": 1.0,
+			"gridOn": false,
 			"xdomain": null,
 			"ydomain": null,
 			"xscale": "linear",
@@ -249,6 +250,7 @@
 			"zoomable": true,
 			"axes": [{position:"left"},
 				 {position:"bottom"}],
+			grids: [],
 			"xgridprops": {},
 			"ygridprops": {},
 			"lines": [],
@@ -331,63 +333,59 @@
 	    this.y = this.ydom;
 	}
 	
-	var axes = this.prop.axes;
-	var paths = this.prop.paths;
-	var lines = this.prop.lines;
-	var markers = this.prop.markers;
-	var texts = this.prop.texts;
-	var collections = this.prop.collections;
-	var images = this.prop.images;
-	
 	// Add axes and grids
+	var axes = this.prop.axes;
 	for(var i=0; i<axes.length; i++){
 	    var axis = new mpld3.Axis(this, axes[i])
 	    this.elements.push(axis);
-	    if(axis.prop.grid.gridOn){
+	    if(this.prop.gridOn || axis.prop.grid.gridOn){
 		this.elements.push(axis.getGrid());
 	    }
 	}
-	
-	// Add lines
-	for(var i=0; i<lines.length;i++){
-	    this.elements.push(new mpld3.Line(this, lines[i]));
+
+	var grids = this.prop.grids;
+	for(var i=0; i<grids.length; i++){
+	    this.elements.push(new Grid(this, grids[i])); 
 	}
 	
 	// Add paths
+	var paths = this.prop.paths;
 	for(var i=0; i<paths.length;i++){
 	    this.elements.push(new mpld3.Path(this, paths[i]));
 	}
 	
+	// Add lines
+	var lines = this.prop.lines;
+	for(var i=0; i<lines.length;i++){
+	    this.elements.push(new mpld3.Line(this, lines[i]));
+	}
+	
 	// Add markers
+	var markers = this.prop.markers;
 	for(var i=0; i<markers.length;i++){
 	    this.elements.push(new mpld3.Markers(this, markers[i]));
 	}
 	
-	// Add text
+	// Add texts
+	var texts = this.prop.texts;
 	for(var i=0; i<texts.length; i++){
 	    this.elements.push(new mpld3.Text(this, texts[i]));
 	}
 	
 	// Add collections
+	var collections = this.prop.collections;
 	for(var i=0; i<collections.length; i++){
 	    this.elements.push(new mpld3.PathCollection(this, collections[i]));
 	}
 	
 	// Add images
+	var images = this.prop.images;
 	for(var i=0; i<images.length; i++){
 	    this.elements.push(new mpld3.Image(this, images[i]));
 	}
 	
-	// Sort by zorder
-	this.elements.sort(function(a,b){return a.prop.zorder - b.prop.zorder});
-    }
-    
-    mpld3.Axes.prototype.xfigure = function(x){
-	return x - this.position[0];
-    }
-    
-    mpld3.Axes.prototype.yfigure = function(y){
-	return this.fig.height - this.position[1] - y;
+	// Sort all elements by zorder
+	this.elements.sort(function(a,b){return a.prop.zorder-b.prop.zorder});
     }
     
     mpld3.Axes.prototype.draw = function(){
@@ -587,7 +585,11 @@
     mpld3.Axis.prototype.getGrid = function(){
 	var gridprop = {nticks: this.prop.nticks, zorder: this.prop.zorder,
 			tickvalues: this.prop.tickvalues, xy: this.prop.xy}
-	for(var key in this.prop.grid){gridprop[key] = this.prop.grid[key];}
+	if(this.prop.grid){
+	    for(var key in this.prop.grid){
+		gridprop[key] = this.prop.grid[key];
+	    }
+	}
 	return new mpld3.Grid(this.axes, gridprop);
     };
     
