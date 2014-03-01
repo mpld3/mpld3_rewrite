@@ -6,12 +6,7 @@ from ._server import serve_and_open
 
 from .mplexporter import Exporter
 from .mpld3renderer import MPLD3Renderer
-
-import warnings
-warnings.warn("using temporary MPLD3_URL: switch to ghpages ASAP!")
-
-D3_URL = "http://d3js.org/d3.v3.min.js"
-MPLD3_URL = "http://rawgithub.com/mpld3/mpld3_rewrite/master/js/mpld3.v1.js"
+from .urls import D3_URL, MPLD3_URL
 
 
 # Simple HTML template. This works in standalone web pages for single figures,

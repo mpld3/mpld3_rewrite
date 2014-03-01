@@ -30,6 +30,7 @@ setup(name=NAME,
                 'mpld3_rewrite/mplexporter',
                 'mpld3_rewrite/mplexporter/renderers',
                 'mpld3_rewrite/mplexporter/renderers/plotly'],
+      package_data={'mpld3_rewrite': ['js/*.js']},
       classifiers=[
         'Development Status :: 4 - Beta',
         'Environment :: Console',

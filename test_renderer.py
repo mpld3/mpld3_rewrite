@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from mpld3_rewrite import fig_to_d3
 
 D3_URL = 'js/d3.v3.min.js'
-MPLD3_URL = 'js/mpld3.v1.js'
+MPLD3_URL = 'js/mpld3.v0.1.js'
 
 
 def test1(filename):

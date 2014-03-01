@@ -7,6 +7,7 @@ save them as D3js to a single HTML file for inspection.
 import os
 import glob
 import sys
+import mpld3_rewrite as mpld3
 from mpld3_rewrite import fig_to_d3
 
 import matplotlib
@@ -130,12 +131,17 @@ def run_main():
     parser.add_argument("-o", "--output",
                         help="output filename",
                         type=str, default='test_plots.html')
+    parser.add_argument("-l", "--local", action="store_true")
     args = parser.parse_args()
 
     if len(args.files) == 0:
         wildcard = 'test_plots/*.py'
     else:
         wildcard = args.files
+
+    if args.local:
+        args.d3_url = mpld3.D3_LOCAL
+        args.mpld3_url = mpld3.MPLD3_LOCAL
 
     combine_testplots(wildcard=wildcard,
                       outfile=args.output,

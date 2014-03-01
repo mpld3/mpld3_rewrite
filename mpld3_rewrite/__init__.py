@@ -20,13 +20,11 @@ Functions: IPython Notebook
                              in the IPython
 """
 
-__version__ = '0.0.2'
+__version__ = '0.1'
 __all__ = ["fig_to_d3", "display_d3", "show_d3",
-           "enable_notebook", "disable_notebook"]
+           "enable_notebook", "disable_notebook",
+           "D3_URL", "MPLD3_URL"]
 
+from .urls import D3_URL, MPLD3_URL, D3_LOCAL, MPLD3_LOCAL
 from .display import fig_to_d3, display_d3, show_d3
 from .display import enable_notebook, disable_notebook
-
-
-class disable(object):
-    """Context manager to temporarily disable mpld3 show_d3() command"""
