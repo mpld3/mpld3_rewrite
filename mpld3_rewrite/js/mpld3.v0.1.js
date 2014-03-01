@@ -40,12 +40,14 @@
 	this.width = this.prop.width;
 	this.height = this.prop.height;
 	this.data = this.prop.data;
+
 	this.toolbar = new mpld3.Toolbar(this, this.prop.toolbar);
 	
 	this.axes = [];
 	for(var i=0; i<prop.axes.length; i++){
 	    this.axes.push(new mpld3.Axes(this, this.prop.axes[i]));
-    }
+	}
+
 	this.plugins = [];
 	for(var i=0; i<prop.plugins.length; i++){
 	    this.add_plugin(this.prop.plugins[i]["type"],
@@ -140,14 +142,18 @@
 	this.name = "mpld3.Toolbar";
 	this.fig = fig;
 	this.prop = prop;
+	this.buttons = [];
+	for(var i=0; i<this.prop.length; i++){
+	    var Button = this.buttonDict[this.prop[i]];
+	    if(typeof(Button) === "undefined"){
+		console.warn("Button type " + this.prop[i] + " not recognized");
+	    }else{
+		this.buttons.push(new Button(this,
+					     "mpld3-"+this.prop[i]+"button",
+					     this.prop[i]));
+	    }
+	}
     };
-
-    mpld3.Toolbar.prototype.add_button = function(cls, icon, click){
-	return this.toolbar.append("img")
-	    .attr("class", cls)
-	    .attr("src", mpld3.icons[icon])
-	    .on("click", click);
-    }
     
     mpld3.Toolbar.prototype.draw = function(){
 	this.toolbar = this.fig.root.append("div")
@@ -166,26 +172,8 @@
 	mpld3.insert_css("div#"+this.fig.figid + " .mpld3-toolbar img.pressed",
 			 {opacity: 0.6})
 
-	for(var i=0; i<this.prop.length; i++){
-	    switch(this.prop[i])
-	    {
-	    case "reset":
-		this.add_button("mpld3-resetbutton", "home",
-				 this.fig.reset.bind(this.fig));
-		break;
-	    case "move":
-		this.add_button("mpld3-movebutton", "move",
-				function(){
-				    this.fig.toggle_zoom();
-				    this.toolbar.selectAll(".mpld3-movebutton")
-					.classed({pressed: this.fig.zoom_on,
-						  active: !this.fig.zoom_on});
-				}.bind(this));
-		this.fig.disable_zoom();
-		break;
-	    default:
-		throw "toolbar '" + this.prop[i] + "' not recognized";
-	    }
+	for(var i=0; i<this.buttons.length; i++){
+	    this.buttons[i].draw();
 	}
 	this.toolbar.selectAll("img")
            .on("mouseenter", function(){d3.select(this).classed({active:1})})
@@ -193,6 +181,52 @@
            .on("mousedown", function(){d3.select(this).classed({pressed:1})})
            .on("mouseup", function(){d3.select(this).classed({pressed:0})});
     };
+
+
+    /* Toolbar Button Object: */
+    mpld3.BaseButton = function(toolbar, cssclass, icon){
+	this.toolbar = toolbar;
+	this.cssclass = cssclass;
+	this.icon = icon;
+    };
+
+    mpld3.BaseButton.prototype.draw = function(){
+	return this.toolbar.toolbar.append("img")
+	    .attr("class", this.cssclass)
+	    .attr("src", this.toolbar.icons[this.icon])
+	    .on("click", this.onClick.bind(this));
+    };
+
+
+    /* Reset Button */
+    /* Man, JS Inheritance is ugly... */
+    mpld3.ResetButton = function(){mpld3.BaseButton.apply(this, arguments)};
+    mpld3.ResetButton.prototype = new mpld3.BaseButton();
+    mpld3.ResetButton.prototype.constructor = mpld3.ResetButton;
+    mpld3.ResetButton.prototype.onClick = function(){this.toolbar.fig.reset();};
+    
+
+    /* Move Button */
+    mpld3.MoveButton = function(){mpld3.BaseButton.apply(this, arguments)};
+    mpld3.MoveButton.prototype = new mpld3.BaseButton();
+    mpld3.MoveButton.prototype.constructor = mpld3.MoveButton;
+    mpld3.MoveButton.prototype.draw = function(){
+	mpld3.BaseButton.prototype.draw.apply(this);
+	this.toolbar.fig.disable_zoom();
+    }
+    mpld3.MoveButton.prototype.onClick = function(){
+	this.toolbar.fig.toggle_zoom();
+	this.toolbar.toolbar.selectAll(".mpld3-movebutton")
+	    .classed({pressed: this.toolbar.fig.zoom_on,
+		      active: !this.toolbar.fig.zoom_on});
+    };
+    
+    /* Set up the mapping of button types and icons */
+    /* Icons come from the mpld3/icons/ directory   */
+    mpld3.Toolbar.prototype.buttonDict = {move: mpld3.MoveButton,
+					  reset: mpld3.ResetButton};
+    mpld3.Toolbar.prototype.icons = {reset: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAABmJLR0QA/wD/AP+gvaeTAAAACXBI\nWXMAAAsTAAALEwEAmpwYAAAAB3RJTUUH3gIcACMoD/OzIwAAAJhJREFUOMtjYKAx4KDUgNsMDAx7\nyNV8i4GB4T8U76VEM8mGYNNMtCH4NBM0hBjNMIwSsMzQ0MamcDkDA8NmQi6xggpUoikwQbIkHk2u\nE0rLI7vCBknBSyxeRDZAE6qHgQkq+ZeBgYERSfFPAoHNDNUDN4BswIRmKgxwEasP2dlsDAwMYlA/\n/mVgYHiBpkkGKscIDaPfVMmuAGnOTaGsXF0MAAAAAElFTkSuQmCC\n",
+				     move: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAABmJLR0QA/wD/AP+gvaeTAAAACXBI\nWXMAAAsTAAALEwEAmpwYAAAAB3RJTUUH3gIcACQMfLHBNQAAANZJREFUOMud07FKA0EQBuAviaKB\nlFr7COJrpAyYRlKn8hECEkFEn8ROCCm0sBMRYgh5EgVFtEhsRjiO27vkBoZd/vn5d3b+XcrjFI9q\nxgXWkc8pUjOB93GMd3zgB9d1unjDSxmhWSHQqOJki+MtOuv/b3ZifUqctIrMxwhHuG1gim4Ma5kR\nWuEkXFgU4B0MW1Ho4TeyjX3s4TDq3zn8ALvZ7q5wX9DqLOHCDA95cFBAnOO1AL/ZdNopgY3fQcqF\nyriMe37hM9w521ZkkvlMo7o/8g7nZYQ/QDctp1nTCf0AAAAASUVORK5CYII=\n"};
 
 
     /* Coordinates Object: */
@@ -1360,9 +1394,6 @@
     mpld3.path = function(){
 	return mpld3_path();
     }
-    
-    mpld3.icons = {home: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAABmJLR0QA/wD/AP+gvaeTAAAACXBI\nWXMAAAsTAAALEwEAmpwYAAAAB3RJTUUH3gIcACMoD/OzIwAAAJhJREFUOMtjYKAx4KDUgNsMDAx7\nyNV8i4GB4T8U76VEM8mGYNNMtCH4NBM0hBjNMIwSsMzQ0MamcDkDA8NmQi6xggpUoikwQbIkHk2u\nE0rLI7vCBknBSyxeRDZAE6qHgQkq+ZeBgYERSfFPAoHNDNUDN4BswIRmKgxwEasP2dlsDAwMYlA/\n/mVgYHiBpkkGKscIDaPfVMmuAGnOTaGsXF0MAAAAAElFTkSuQmCC\n",
-		   move: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAABmJLR0QA/wD/AP+gvaeTAAAACXBI\nWXMAAAsTAAALEwEAmpwYAAAAB3RJTUUH3gIcACQMfLHBNQAAANZJREFUOMud07FKA0EQBuAviaKB\nlFr7COJrpAyYRlKn8hECEkFEn8ROCCm0sBMRYgh5EgVFtEhsRjiO27vkBoZd/vn5d3b+XcrjFI9q\nxgXWkc8pUjOB93GMd3zgB9d1unjDSxmhWSHQqOJki+MtOuv/b3ZifUqctIrMxwhHuG1gim4Ma5kR\nWuEkXFgU4B0MW1Ho4TeyjX3s4TDq3zn8ALvZ7q5wX9DqLOHCDA95cFBAnOO1AL/ZdNopgY3fQcqF\nyriMe37hM9w521ZkkvlMo7o/8g7nZYQ/QDctp1nTCf0AAAAASUVORK5CYII=\n"}
     
     // put mpld3 in the global namespace
     this.mpld3 = mpld3;
