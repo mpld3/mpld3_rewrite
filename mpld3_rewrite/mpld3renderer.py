@@ -5,7 +5,7 @@ import itertools
 
 import numpy as np
 
-from .mplexporter import utils
+from .mplexporter.utils import color_to_hex
 from .mplexporter.exporter import Exporter
 from .mplexporter.renderers import Renderer
 
@@ -137,23 +137,6 @@ class MPLD3Renderer(Renderer):
         self.axes_json['sharey'] = [get_id(axi) for axi in ysib
                                     if axi is not ax]
 
-        labels = []
-        if props.get('xlabel'):
-            labels.append(ax.xaxis.label)
-        if props.get('ylabel'):
-            labels.append(ax.yaxis.label)
-        if props.get('title'):
-            labels.append(ax.title)
-
-        for text in labels:
-            content = text.get_text()
-            if content:
-                code, position = Exporter.process_transform(
-                    text.get_transform(), ax, text.get_position(),
-                    force_trans=ax.transAxes)
-                style = utils.get_text_style(text)
-                self.draw_text(content, position, code, style)
-
     def close_axes(self, ax):
         self.axes_json = None
 
@@ -201,9 +184,9 @@ class MPLD3Renderer(Renderer):
                              offsets, offset_coordinates, offset_order,
                              styles, mplobj=None):
         styles = dict(alphas=[styles['alpha']],
-                      edgecolors=[utils.color_to_hex(ec)
+                      edgecolors=[color_to_hex(ec)
                                   for ec in styles['edgecolor']],
-                      facecolors=[utils.color_to_hex(fc)
+                      facecolors=[color_to_hex(fc)
                                   for fc in styles['facecolor']],
                       edgewidths=styles['linewidth'],
                       offsetcoordinates=offset_coordinates,
