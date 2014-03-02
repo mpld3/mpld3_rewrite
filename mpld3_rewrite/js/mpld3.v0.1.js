@@ -182,6 +182,12 @@
            .on("mouseup", function(){d3.select(this).classed({pressed:0})});
     };
 
+    mpld3.Toolbar.prototype.deactivate_all = function(){
+	for(var i=0; i<this.buttons.length; i++){
+	    this.buttons[i].deactivate();
+	}
+    };
+
 
     /* Toolbar Button Object: */
     mpld3.BaseButton = function(toolbar, cssclass, icon){
@@ -196,6 +202,8 @@
 	    .attr("src", this.toolbar.icons[this.icon])
 	    .on("click", this.onClick.bind(this));
     };
+
+    mpld3.BaseButton.prototype.deactivate = function(){};
 
 
     /* Reset Button */
@@ -220,6 +228,12 @@
 	    .classed({pressed: this.toolbar.fig.zoom_on,
 		      active: !this.toolbar.fig.zoom_on});
     };
+    mpld3.MoveButton.prototype.deactivate = function(){
+	this.toolbar.fig.disable_zoom();
+	this.toolbar.toolbar.selectAll(".mpld3-movebutton")
+	    .classed({pressed: this.toolbar.fig.zoom_on,
+		      active: false});
+    }
     
     /* Set up the mapping of button types and icons */
     /* Icons come from the mpld3/icons/ directory   */
