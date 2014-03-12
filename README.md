@@ -1,6 +1,9 @@
 mpld3_rewrite
 =============
 
+**Note: this has been merged into the main mpld3 repository. Any further
+development will happen there.**
+
 A work in progress to refactor [mpld3](http://github.com/jakevdp/mpld3) in
 conjunction with [mplexporter](http://github.com/mpld3/mplexporter).
 
